@@ -14,7 +14,7 @@ def load_data():
 @st.cache_data
 def load_data():
     # Cargamos el archivo indicando el separador correcto
-    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
+    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=0)
     
     # 1. Limpiamos espacios en los nombres de las columnas
     df.columns = df.columns.str.strip()
