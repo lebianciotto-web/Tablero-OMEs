@@ -28,22 +28,32 @@ def calcular_instancias(df):
                     'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado']
     
     resultados = []
-    bloque_actual = None
+    # Convertimos a numérico de forma segura
+    df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce').fillna(0)
     
-    for _, fila in df.iterrows():
-        esquema = str(fila['Número de esquema'])
-        # Si no tiene punto es Tarea Principal
-        if '.' not in esquema:
-            bloque_actual = fila['Nombre']
-        else:
-            # Si es sub-tarea y está al 100% (o muy cerca)
-            if float(fila['% completado']) >= 0.99:
-                resultados.append({'Obra': bloque_actual, 'Instancia': fila['Nombre']})
+    # Buscamos bloques: desde un número entero hasta el siguiente
+    indices_principales = df[~df['Número de esquema'].str.contains('\.', na=False)].index
     
-    df_res = pd.DataFrame(resultados)
-    if not df_res.empty:
-        return df_res.groupby('Obra').tail(1)
-    return pd.DataFrame(columns=['Obra', 'Instancia'])
+    for i in range(len(indices_principales)):
+        idx_inicio = indices_principales[i]
+        # El bloque termina donde empieza el siguiente o al final del archivo
+        idx_fin = indices_principales[i+1] if (i+1) < len(indices_principales) else len(df)
+        
+        bloque = df.iloc[idx_inicio:idx_fin]
+        nombre_obra = bloque.iloc[0]['Nombre']
+        
+        # Buscamos la última etapa completada en este bloque
+        etapa_actual = 'Pliego' # Default
+        for etapa in reversed(orden_etapas):
+            # Filtramos si la fila coincide con el nombre de la etapa y está al 100%
+            subtarea = bloque[bloque['Nombre'] == etapa]
+            if not subtarea.empty and subtarea.iloc[0]['% completado'] >= 0.99:
+                etapa_actual = etapa
+                break
+        
+        resultados.append({'Obra': nombre_obra, 'Instancia': etapa_actual})
+    
+    return pd.DataFrame(resultados)
 
 # 3. EJECUCIÓN
 df = cargar_datos()
