@@ -1,3 +1,13 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# Ahora que ya importaste 'st', ya puedes usar el decorador abajo
+@st.cache_data
+def cargar_datos():
+
+
+
 @st.cache_data
 def cargar_datos():
     st.write("Muestra de datos en % completado:", df['% completado'].head(10))
