@@ -262,3 +262,94 @@ with col_donut:
     fig_donut = go.Figure(go.Pie(
         values=[pct_finalizadas, 100 - pct_finalizadas],
         labels=['Finalizadas', 'Pendientes'],
+        hole=0.72,
+        marker_colors=['#0B5FA5', '#E5EEF7'],
+        textinfo='none',
+        sort=False,
+    ))
+    fig_donut.update_layout(
+        showlegend=False,
+        margin=dict(l=0, r=0, t=10, b=10),
+        height=280,
+        annotations=[dict(
+            text=f"<b>{pct_finalizadas:.0f}%</b><br><span style='font-size:12px'>FINALIZADAS</span>",
+            x=0.5, y=0.5, font_size=28, showarrow=False
+        )],
+    )
+    st.plotly_chart(fig_donut, use_container_width=True)
+    st.caption(f"🎯 META: {META_FINALIZADAS}%  ·  Actual: {pct_finalizadas:.1f}%")
+
+with col_bar:
+    st.markdown("#### OBRAS POR INSTANCIA")
+    conteo = (
+        df_f['INSTANCIA'].value_counts()
+        .reindex(etapas_upper, fill_value=0)
+        .reset_index()
+    )
+    conteo.columns = ['Etapa', 'Cantidad']
+    fig_bar = px.bar(
+        conteo, x='Etapa', y='Cantidad', text='Cantidad',
+        color='Etapa', color_discrete_map=colores_etapas,
+    )
+    fig_bar.update_traces(textposition='outside')
+    fig_bar.update_layout(
+        showlegend=False, xaxis_tickangle=-25,
+        margin=dict(l=10, r=10, t=10, b=10), height=300,
+        yaxis_title=None, xaxis_title=None, plot_bgcolor='white',
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+# ============================================================
+# 7. LISTADO DETALLADO
+# ============================================================
+st.markdown("### 📋 LISTADO DE OMEs DETALLADO")
+
+def fmt_estado(s):
+    if s == "Completada":
+        return "🔵 Completada"
+    if s == "En Curso":
+        return "🟢 En Curso"
+    if s == "Crítica":
+        return "🔴 Crítica"
+    return s
+
+df_show = df_f.copy()
+df_show['ESTADO'] = df_show['ESTADO'].map(fmt_estado)
+df_show['FECHA INICIO'] = df_show['FECHA INICIO'].dt.strftime('%d/%m/%Y').fillna('-')
+df_show['VENCIMIENTO']  = df_show['VENCIMIENTO'].dt.strftime('%d/%m/%Y').fillna('-')
+
+cols_order = [
+    'ID', 'NOMBRE DE OBRA', 'AEROPUERTO', 'INSTANCIA',
+    '% AVANCE', 'ESTADO', 'FECHA INICIO', 'VENCIMIENTO', 'SAP ARIBA'
+]
+df_show = df_show[cols_order]
+
+st.dataframe(
+    df_show,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "% AVANCE": st.column_config.ProgressColumn(
+            "% AVANCE", format="%d%%", min_value=0, max_value=100,
+        ),
+        "ID": st.column_config.TextColumn(width="small"),
+        "NOMBRE DE OBRA": st.column_config.TextColumn(width="large"),
+        "SAP ARIBA": st.column_config.LinkColumn(
+            "SAP ARIBA",
+            help="Abrir la obra en SAP Ariba",
+            display_text="🔗 Abrir",
+            width="small",
+        ),
+    },
+)
+
+# ============================================================
+# 8. DATOS CRUDOS
+# ============================================================
+with st.expander("🔍 Ver todas las tareas y sub-tareas (datos crudos)"):
+    st.dataframe(
+        df[['Número de esquema', 'Nombre', 'Aero', 'N° OME',
+            '% completado', 'Link_Ariba', 'Es_Principal', 'Obra_ID']],
+        use_container_width=True,
+        hide_index=True,
+    )
