@@ -1,26 +1,31 @@
-def calcular_instancia(df):
-    orden_etapas = ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
-                    'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado']
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+st.set_page_config(layout="wide")
+st.title("Dashboard de Diagnóstico")
+
+@st.cache_data
+def cargar_datos():
+    # Usamos el nombre exacto de tu archivo y el separador correcto
+    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
+    # Limpiamos nombres de columnas
+    df.columns = df.columns.str.strip()
+    return df
+
+try:
+    df = cargar_datos()
+    st.write("¡Archivo cargado correctamente!")
+    st.write("Columnas detectadas:", df.columns.tolist())
     
-    resultados = []
-    bloque_actual = None
+    # Mostrar el dataframe para ver qué datos hay realmente
+    st.dataframe(df.head(10))
     
-    # Aseguramos que la columna sea numérica, convirtiendo errores a 0
-    df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce').fillna(0)
-    
-    for _, fila in df.iterrows():
-        esquema = str(fila['Número de esquema'])
-        
-        # Si no tiene punto, es Tarea Principal
-        if '.' not in esquema:
-            bloque_actual = fila['Nombre']
-        else:
-            # Si es sub-tarea, verificamos si está al 100%
-            # Usamos float() solo después de asegurar que es un número
-            if float(fila['% completado']) >= 1.0:
-                resultados.append({
-                    'Obra': bloque_actual,
-                    'Instancia': fila['Nombre']
-                })
-    
-    return pd.DataFrame(resultados)
+    # Probemos si existe la columna Aero
+    if 'Aero' in df.columns:
+        st.success("La columna 'Aero' existe.")
+    else:
+        st.error("La columna 'Aero' NO existe. Revisa los nombres listados arriba.")
+
+except Exception as e:
+    st.error(f"Error al cargar el archivo: {e}")
