@@ -1,4 +1,12 @@
-﻿Número de tarea;Número de esquema;Nombre;Aero;N° OME;POA;Cuat;Inicio;Finalización;% completado;Duración;Ariba;N° Orden;Prioridad;Depósito;Asignado a;Depende de;Dependientes (después);Esfuerzo;Esfuerzo completado;Esfuerzo restante;Hito;Notas;Completado;Elementos de la lista de comprobación;Etiquetas;Iteración;Goal
+﻿wsw;;;;;;;s;;;;;;;;;;;;;;;;;;;;
+wsw;;;;;;;;;;;;;;;;;;;;;;;;;;;
+wsw;;;;;;;;;;;;;;;;;;;;;;;;;;;
+a;;;;;;;;;;;;;;;;;;;;;;;;;;;
+s;;;;;;;;;;;;;;;;;;;;;;;;;;;
+s;;;;;;;;;;;;;;;;;;;;;;;;;;;
+a;;;;;;;;;;;;;;;;;;;;;;;;;;;
+a;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Número de tarea;Número de esquema;Nombre;Aero;N° OME;POA;Cuat;Inicio;Finalización;% completado;Duración;Ariba;N° Orden;Prioridad;Depósito;Asignado a;Depende de;Dependientes (después);Esfuerzo;Esfuerzo completado;Esfuerzo restante;Hito;Notas;Completado;Elementos de la lista de comprobación;Etiquetas;Iteración;Goal
 1;1;Bacheo Pista 500tn;FMA;34268;320000;1;1/9/2025;29/5/2026;60%;195 días;https://s3.ariba.com/Sourcing/Main/aw?awh=r&awssk=7hV5on7rrTrFYSWw&realm=ca1492&awrdt=1#b0;700761;Media;;;;;;;;No;;;;;;
 2;1.1;Pliego;;;;;1/9/2025;30/9/2025;100%;22 días;;;Media;Pliego;;;3FC;;;;No;;;;;Trabajo pendiente;
 3;1.2;Revisión DOM;;;;;1/10/2025;7/10/2025;100%;5 días;;;Media;Pliego;;2FC;4FC;;;;No;;;;;Trabajo pendiente;
