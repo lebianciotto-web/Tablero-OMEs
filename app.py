@@ -4,10 +4,27 @@ import plotly.express as px
 import streamlit as st
 import pandas as pd
 
+# Carga de datos
+@st.cache_data
+def load_data():
+    # Saltamos las 8 filas iniciales
+    df = pd.read_csv("PR. OMES UNE.csv", skiprows=8)
+    return df
+
+df = load_data()
+
+# --- ESTA LÍNEA TE AYUDARÁ A DEBUGUEAR ---
+st.write("Columnas encontradas en el archivo:", df.columns.tolist())
+# ------------------------------------------
+
+# Ahora, reemplaza 'Aero' por el nombre exacto que veas en pantalla
+# Ejemplo: si el log dice 'Aero ', usa df['Aero ']
+aeropuerto = st.sidebar.multiselect("Aeropuerto", df['Aero'].unique())
+
 @st.cache_data
 def load_data():
     # 1. Leer el archivo forzando el separador ;
-    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=7)
+    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     
     # 2. LIMPIEZA CRÍTICA: Eliminar espacios en blanco de los nombres de columnas
     df.columns = df.columns.str.strip()
