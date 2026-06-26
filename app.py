@@ -11,7 +11,19 @@ def load_data():
     df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=0)
     return df
 
-df = load_data()
+@st.cache_data
+def load_data():
+    # Cargamos el archivo indicando el separador correcto
+    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
+    
+    # 1. Limpiamos espacios en los nombres de las columnas
+    df.columns = df.columns.str.strip()
+    
+    # 2. FORZAMOS la conversión a números de la columna '% completado'
+    # 'coerce' convierte cualquier valor no numérico a NaN (Not a Number) para evitar el error
+    df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce')
+    
+    return df
 
 # Configuración de página
 st.set_page_config(layout="wide")
