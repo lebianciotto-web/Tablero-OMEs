@@ -4,26 +4,24 @@ import plotly.express as px
 import streamlit as st
 import pandas as pd
 
-# Carga de datos
 @st.cache_data
 def load_data():
-    # Agregamos sep=';' para decirle a Pandas que use el punto y coma como separador
-    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=0)
-    return df
-
-@st.cache_data
-def load_data():
-    # Cargamos el archivo indicando el separador correcto
+    # 1. Leer el archivo forzando el separador ;
     df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=0)
     
-    # 1. Limpiamos espacios en los nombres de las columnas
+    # 2. LIMPIEZA CRÍTICA: Eliminar espacios en blanco de los nombres de columnas
     df.columns = df.columns.str.strip()
     
-    # 2. FORZAMOS la conversión a números de la columna '% completado'
-    # 'coerce' convierte cualquier valor no numérico a NaN (Not a Number) para evitar el error
-    df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce')
+    # 3. Asegurar que las columnas clave sean numéricas (ignorar errores si están vacías)
+    if '% completado' in df.columns:
+        df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce')
+    
+    # 4. Debug: Imprimir columnas si sigue fallando (esto aparecerá en tu app)
+    # st.write("Columnas detectadas:", df.columns.tolist())
     
     return df
+
+df = load_data()
 
 # Configuración de página
 st.set_page_config(layout="wide")
