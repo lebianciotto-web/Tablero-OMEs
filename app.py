@@ -1,9 +1,46 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
 
-st.set_page_config(layout="wide", page_title="Dashboard Obras UNE")
-st.title("Dashboard de Obras - UNE")
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
+st.set_page_config(
+    layout="wide",
+    page_title="Tablero de Control - OMEs",
+    page_icon="📊",
+)
+
+# ---------- ESTILOS ----------
+st.markdown("""
+<style>
+    .main { background-color: #F4F8FC; }
+    .block-container { padding-top: 1rem; padding-bottom: 1rem; }
+    h1, h2, h3 { color: #0B3D91; }
+    .kpi-card {
+        background: white;
+        padding: 18px 20px;
+        border-radius: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        text-align: left;
+        height: 110px;
+    }
+    .kpi-title { font-size: 13px; color: #6B7280; font-weight: 600; letter-spacing: .5px;}
+    .kpi-value { font-size: 32px; font-weight: 800; color: #0B5FA5; margin-top: 4px;}
+    .kpi-value.red { color: #DC2626; }
+    .header-bar {
+        background: linear-gradient(90deg,#E8F1FB,#FFFFFF);
+        padding: 14px 20px; border-radius: 14px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        margin-bottom: 14px;
+    }
+    .header-title { font-size: 26px; font-weight: 800; color: #0B3D91; }
+    .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px;}
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # 1. CARGA DE DATOS
@@ -12,24 +49,23 @@ st.title("Dashboard de Obras - UNE")
 def cargar_datos():
     df = pd.read_csv(
         "PR. OMES UNE.csv",
-        sep=';',
-        skiprows=8,
-        decimal=',',
-        encoding='utf-8'
+        sep=';', skiprows=8, decimal=',', encoding='utf-8'
     )
     df.columns = df.columns.str.strip()
-
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
 
     df['% completado'] = (
-        df['% completado']
-        .astype(str)
+        df['% completado'].astype(str)
         .str.replace('%', '', regex=False)
         .str.replace(',', '.', regex=False)
         .astype(float)
     )
     if df['% completado'].max() > 1.5:
         df['% completado'] = df['% completado'] / 100.0
+
+    for col in ['Comienzo', 'Finalización']:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce', dayfirst=True)
 
     return df
 
@@ -41,151 +77,225 @@ df = cargar_datos()
 df['Es_Principal'] = ~df['Número de esquema'].str.contains(r'\.', regex=True, na=False)
 df['Obra_ID'] = df['Es_Principal'].cumsum()
 
-# ============================================================
-# 3. ETAPAS DEL FLUJO (en orden)
-# ============================================================
 orden_etapas = [
-    'Pliego',
-    'Revisión DOM',
-    'Presupuesto',
-    'Documentación en papel',
-    'ORSNA',
-    'Adjudicación',
-    'Ejecución',
-    'CAO presentado',
+    'Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel',
+    'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado',
 ]
+etapas_upper = ['PLIEGO', 'REVISIÓN DOM', 'PRESUPUESTO', 'DOC. EN PAPEL',
+                'ORSNA', 'ADJUDICACIÓN', 'EJECUCIÓN', 'CAO PRESENTADO']
+mapa_upper = dict(zip(orden_etapas, etapas_upper))
+
+colores_etapas = {
+    'PLIEGO': '#A8D8F0', 'REVISIÓN DOM': '#F39C58', 'PRESUPUESTO': '#A8D26F',
+    'DOC. EN PAPEL': '#E15A5A', 'ORSNA': '#E76FA1', 'ADJUDICACIÓN': '#9B59B6',
+    'EJECUCIÓN': '#1F8A4C', 'CAO PRESENTADO': '#3FA9B5',
+    'FINALIZADA': '#2E86C1', 'SIN INICIAR': '#BDC3C7',
+}
 
 # ============================================================
-# 4. DETECTAR INSTANCIA ACTUAL DE CADA OBRA
+# 3. INSTANCIA ACTUAL POR OBRA
 # ============================================================
-TOL = 1e-6  # tolerancia numérica
-
+TOL = 1e-6
 resultados = []
 
 for obra_id, grupo in df.groupby('Obra_ID'):
-    fila_principal = grupo[grupo['Es_Principal']].iloc[0]
-    nombre_obra = fila_principal['Nombre']
-    aero        = fila_principal.get('Aero', '')
-    n_ome       = fila_principal.get('N° OME', '')
-    avance_obra = fila_principal.get('% completado', 0)
+    fila = grupo[grupo['Es_Principal']].iloc[0]
+    nombre = fila['Nombre']
+    aero   = fila.get('Aero', '')
+    n_ome  = fila.get('N° OME', '')
+    avance = fila.get('% completado', 0)
+    inicio = fila.get('Comienzo', pd.NaT)
+    fin    = fila.get('Finalización', pd.NaT)
 
-    subtareas = grupo[~grupo['Es_Principal']].copy()
-    subtareas['Nombre_norm'] = subtareas['Nombre'].astype(str).str.strip().str.lower()
+    sub = grupo[~grupo['Es_Principal']].copy()
+    sub['Nombre_norm'] = sub['Nombre'].astype(str).str.strip().str.lower()
 
-    # Construimos un dict {etapa: pct} respetando el orden del flujo
     etapas_pct = []
     for etapa in orden_etapas:
-        match = subtareas[subtareas['Nombre_norm'] == etapa.lower()]
-        if not match.empty:
-            etapas_pct.append((etapa, float(match['% completado'].iloc[0])))
+        m = sub[sub['Nombre_norm'] == etapa.lower()]
+        if not m.empty:
+            etapas_pct.append((etapa, float(m['% completado'].iloc[0])))
 
-    instancia_actual = "Sin iniciar"
-    estado = "sin_iniciar"
-
+    instancia = "SIN INICIAR"
     if etapas_pct:
-        # 1) ¿Hay alguna en curso (0 < pct < 1)?
-        en_curso = next(
-            ((e, p) for e, p in etapas_pct if TOL < p < 1.0 - TOL),
-            None
-        )
+        en_curso = next(((e, p) for e, p in etapas_pct if TOL < p < 1.0 - TOL), None)
         if en_curso:
-            instancia_actual = f"En curso: {en_curso[0]}"
-            estado = "en_curso"
+            instancia = mapa_upper[en_curso[0]]
+        elif all(p >= 1.0 - TOL for _, p in etapas_pct):
+            instancia = "FINALIZADA"
+        elif all(p <= TOL for _, p in etapas_pct):
+            instancia = "SIN INICIAR"
         else:
-            # 2) ¿Todas finalizadas?
-            if all(p >= 1.0 - TOL for _, p in etapas_pct):
-                instancia_actual = "Finalizada"
-                estado = "finalizada"
-            # 3) ¿Ninguna iniciada?
-            elif all(p <= TOL for _, p in etapas_pct):
-                instancia_actual = "Sin iniciar"
-                estado = "sin_iniciar"
-            # 4) Entre etapas: primera con pct=0 después de las completadas
-            else:
-                pendiente = next(
-                    (e for e, p in etapas_pct if p <= TOL),
-                    None
-                )
-                if pendiente:
-                    instancia_actual = f"Pendiente: {pendiente}"
-                    estado = "pendiente"
+            pend = next((e for e, p in etapas_pct if p <= TOL), None)
+            if pend:
+                instancia = mapa_upper[pend]
+
+    # Estado: Completada / En Curso / Crítica
+    hoy = pd.Timestamp(datetime.now().date())
+    if instancia == "FINALIZADA":
+        estado = "Completada"
+    elif pd.notna(fin) and fin < hoy and avance < 1.0:
+        estado = "Crítica"
+    else:
+        estado = "En Curso"
 
     resultados.append({
-        'N° OME':    n_ome,
-        'Aero':      aero,
-        'Obra':      nombre_obra,
-        '% Avance':  round(avance_obra * 100, 1) if avance_obra <= 1 else round(avance_obra, 1),
-        'Instancia': instancia_actual,
-        'Estado':    estado,
+        'ID': n_ome,
+        'NOMBRE DE OBRA': nombre,
+        'AEROPUERTO': aero,
+        'INSTANCIA': instancia,
+        '% AVANCE': round(avance * 100, 0),
+        'ESTADO': estado,
+        'FECHA INICIO': inicio,
+        'VENCIMIENTO': fin,
     })
 
 df_inst = pd.DataFrame(resultados)
 
 # ============================================================
+# 4. HEADER
+# ============================================================
+fecha_actual = datetime.now().strftime("%d/%m/%Y")
+st.markdown(f"""
+<div class="header-bar">
+    <div class="header-title">📊 TABLERO DE CONTROL - GESTIÓN DE OMEs (PLANNERS)</div>
+    <div style="text-align:right;">
+        <div style="font-weight:700; color:#0B3D91;">GESTOR DE PROYECTOS</div>
+        <div style="font-size:12px; color:#6B7280;">Actualizado: {fecha_actual}</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ============================================================
 # 5. FILTROS LATERALES
 # ============================================================
-st.sidebar.header("Filtros")
-aeros = sorted([a for a in df_inst['Aero'].dropna().unique() if str(a).strip() != ''])
-sel_aero = st.sidebar.multiselect("Aeropuerto (Aero)", aeros, default=aeros)
+st.sidebar.markdown("## 🔎 FILTROS")
 
-instancias_disp = sorted(df_inst['Instancia'].unique().tolist())
+aeros = sorted([a for a in df_inst['AEROPUERTO'].dropna().unique() if str(a).strip()])
+sel_aero = st.sidebar.multiselect("Aeropuerto", aeros, default=aeros)
+
+estados = ['Completada', 'En Curso', 'Crítica']
+sel_estado = st.sidebar.multiselect("Estado", estados, default=estados)
+
+instancias_disp = etapas_upper + ['FINALIZADA', 'SIN INICIAR']
 sel_inst = st.sidebar.multiselect("Instancia", instancias_disp, default=instancias_disp)
 
-df_filtrado = df_inst[
-    df_inst['Aero'].isin(sel_aero) &
-    df_inst['Instancia'].isin(sel_inst)
+META_FINALIZADAS = st.sidebar.slider("Meta % obras finalizadas", 0, 100, 85)
+
+df_f = df_inst[
+    df_inst['AEROPUERTO'].isin(sel_aero) &
+    df_inst['ESTADO'].isin(sel_estado) &
+    df_inst['INSTANCIA'].isin(sel_inst)
 ]
 
 # ============================================================
-# 6. INDICADORES
+# 6. KPI CARDS
 # ============================================================
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Obras",   len(df_inst))
-col2.metric("En curso",      (df_inst['Estado'] == 'en_curso').sum())
-col3.metric("Pendientes",    (df_inst['Estado'] == 'pendiente').sum())
-col4.metric("Finalizadas",   (df_inst['Estado'] == 'finalizada').sum())
+total = len(df_f)
+activas = (df_f['ESTADO'] == 'En Curso').sum()
+atrasadas = (df_f['ESTADO'] == 'Crítica').sum()
+finalizadas = (df_f['ESTADO'] == 'Completada').sum()
+pct_finalizadas = (finalizadas / total * 100) if total else 0
+
+col_kpi, col_donut, col_bar = st.columns([1.1, 1.2, 2.7])
+
+with col_kpi:
+    st.markdown(f"""
+    <div class="kpi-card"><div class="kpi-title">📁 TOTAL OMEs</div>
+    <div class="kpi-value">{total:,}</div></div>
+    """, unsafe_allow_html=True)
+    st.write("")
+    st.markdown(f"""
+    <div class="kpi-card"><div class="kpi-title">📈 TAREAS ACTIVAS</div>
+    <div class="kpi-value">{activas:,}</div></div>
+    """, unsafe_allow_html=True)
+    st.write("")
+    st.markdown(f"""
+    <div class="kpi-card"><div class="kpi-title">⚠️ ATRASADAS</div>
+    <div class="kpi-value red">{atrasadas:,}</div></div>
+    """, unsafe_allow_html=True)
+
+# ----- DONUT -----
+with col_donut:
+    st.markdown("#### OBRAS FINALIZADAS")
+    fig_donut = go.Figure(go.Pie(
+        values=[pct_finalizadas, 100 - pct_finalizadas],
+        labels=['Finalizadas', 'Pendientes'],
+        hole=0.72,
+        marker_colors=['#0B5FA5', '#E5EEF7'],
+        textinfo='none',
+        sort=False,
+    ))
+    fig_donut.update_layout(
+        showlegend=False,
+        margin=dict(l=0, r=0, t=10, b=10),
+        height=280,
+        annotations=[
+            dict(text=f"<b>{pct_finalizadas:.0f}%</b><br><span style='font-size:12px'>FINALIZADAS</span>",
+                 x=0.5, y=0.5, font_size=28, showarrow=False),
+        ],
+    )
+    st.plotly_chart(fig_donut, use_container_width=True)
+    st.caption(f"🎯 META: {META_FINALIZADAS}%  ·  Actual: {pct_finalizadas:.1f}%")
+
+# ----- BAR CHART -----
+with col_bar:
+    st.markdown("#### OBRAS POR INSTANCIA")
+    conteo = (
+        df_f['INSTANCIA'].value_counts()
+        .reindex(etapas_upper, fill_value=0)
+        .reset_index()
+    )
+    conteo.columns = ['Etapa', 'Cantidad']
+    fig_bar = px.bar(
+        conteo, x='Etapa', y='Cantidad', text='Cantidad',
+        color='Etapa', color_discrete_map=colores_etapas,
+    )
+    fig_bar.update_traces(textposition='outside')
+    fig_bar.update_layout(
+        showlegend=False, xaxis_tickangle=-25,
+        margin=dict(l=10, r=10, t=10, b=10), height=300,
+        yaxis_title=None, xaxis_title=None,
+        plot_bgcolor='white',
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
 
 # ============================================================
-# 7. GRÁFICO DE BARRAS POR INSTANCIA
+# 7. LISTADO DETALLADO
 # ============================================================
-st.subheader("Obras por Instancia Actual")
+st.markdown("### 📋 LISTADO DE OMEs DETALLADO")
 
-conteo = (
-    df_filtrado['Instancia']
-    .value_counts()
-    .reset_index()
-)
-conteo.columns = ['Etapa', 'Cantidad']
+# Colores por estado para el "dot"
+estado_color = {'Completada': '#3498DB', 'En Curso': '#27AE60', 'Crítica': '#E74C3C'}
 
-fig = px.bar(
-    conteo,
-    x='Etapa',
-    y='Cantidad',
-    text='Cantidad',
-    title="Distribución de obras según su instancia actual",
-    color='Etapa',
-)
-fig.update_traces(textposition='outside')
-fig.update_layout(showlegend=False, xaxis_tickangle=-30)
-st.plotly_chart(fig, use_container_width=True)
+def fmt_estado(s):
+    color = estado_color.get(s, '#888')
+    return f"🔵 {s}" if s == "Completada" else ("🟢 " + s if s == "En Curso" else "🔴 " + s)
 
-# ============================================================
-# 8. LISTADO DETALLADO
-# ============================================================
-st.subheader("Listado detallado de obras")
+df_show = df_f.copy()
+df_show['ESTADO'] = df_show['ESTADO'].map(fmt_estado)
+df_show['FECHA INICIO'] = df_show['FECHA INICIO'].dt.strftime('%d/%m/%Y').fillna('-')
+df_show['VENCIMIENTO']  = df_show['VENCIMIENTO'].dt.strftime('%d/%m/%Y').fillna('-')
+
 st.dataframe(
-    df_filtrado.drop(columns=['Estado']),
+    df_show,
     use_container_width=True,
     hide_index=True,
+    column_config={
+        "% AVANCE": st.column_config.ProgressColumn(
+            "% AVANCE", format="%d%%", min_value=0, max_value=100,
+        ),
+        "ID": st.column_config.TextColumn(width="small"),
+        "NOMBRE DE OBRA": st.column_config.TextColumn(width="large"),
+    },
 )
 
 # ============================================================
-# 9. DETALLE DE TAREAS Y SUB-TAREAS
+# 8. DATOS CRUDOS (opcional)
 # ============================================================
-with st.expander("Ver todas las tareas y sub-tareas (datos crudos)"):
+with st.expander("🔍 Ver todas las tareas y sub-tareas (datos crudos)"):
     st.dataframe(
         df[['Número de esquema', 'Nombre', 'Aero', 'N° OME',
             '% completado', 'Es_Principal', 'Obra_ID']],
-        use_container_width=True,
-        hide_index=True,
+        use_container_width=True, hide_index=True,
     )
