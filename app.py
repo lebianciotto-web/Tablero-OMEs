@@ -8,7 +8,7 @@ import pandas as pd
 @st.cache_data
 def load_data():
     # Saltamos las 8 filas iniciales
-    df = pd.read_csv("PR. OMES UNE.csv", skiprows=8)
+    df = pd.read_csv("PR. OMES UNE.csv", skiprows=0)
     return df
 
 df = load_data()
