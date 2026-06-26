@@ -10,7 +10,7 @@ def cargar_datos():
     df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     df.columns = df.columns.str.strip()
     
-    # Limpieza de porcentajes
+    # Limpieza de porcentajes: quita '%' y comas, convierte a decimal
     if '% completado' in df.columns:
         col = df['% completado'].astype(str).str.strip().str.replace('%', '').str.replace(',', '.')
         df['% completado'] = pd.to_numeric(col, errors='coerce').fillna(0)
@@ -21,32 +21,34 @@ def cargar_datos():
 
 df = cargar_datos()
 
-# --- LÓGICA DE INSTANCIAS ---
-orden_etapas = ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
-                'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado']
+# Lista de palabras clave que aparecen en tus sub-tareas
+# El código buscará si el nombre de la tarea contiene estas palabras
+orden_etapas = {
+    'Pliego': 'Pliego',
+    'Revisión DOM': 'DOM',
+    'Presupuesto': 'Presupuesto',
+    'Documentación en papel': 'Documentación',
+    'ORSNA': 'ORSNA',
+    'Adjudicación': 'Adjudicación',
+    'Ejecución': 'Ejecución',
+    'CAO presentado': 'CAO'
+}
 
 resultados = []
 df['Es_Principal'] = ~df['Número de esquema'].str.contains('\.')
 df['Obra_ID'] = df['Es_Principal'].cumsum()
 
-# Depuración: vemos qué tareas existen realmente
-nombres_tareas_unicos = df['Nombre'].unique()
-st.sidebar.write("Tareas detectadas en el CSV:", nombres_tareas_unicos)
-
 for obra_id, grupo in df.groupby('Obra_ID'):
     nombre_obra = grupo.iloc[0]['Nombre']
     ultima_etapa_encontrada = "Ninguna"
     
-    # Buscamos de atrás hacia adelante
-    for etapa in reversed(orden_etapas):
-        # Buscamos cualquier fila en el grupo que contenga el nombre de la etapa
-        match = grupo[grupo['Nombre'].str.contains(etapa, case=False, na=False)]
+    # Buscamos de atrás hacia adelante (de CAO a Pliego)
+    for etapa_larga, palabra_clave in reversed(list(orden_etapas.items())):
+        match = grupo[grupo['Nombre'].str.contains(palabra_clave, case=False, na=False)]
         
-        # Si encontramos la tarea y tiene progreso > 0
         if not match.empty:
-            progreso = match.iloc[0]['% completado']
-            if progreso > 0:
-                ultima_etapa_encontrada = etapa
+            if match.iloc[0]['% completado'] > 0:
+                ultima_etapa_encontrada = etapa_larga
                 break
             
     resultados.append({'Obra': nombre_obra, 'Instancia': ultima_etapa_encontrada})
@@ -54,11 +56,16 @@ for obra_id, grupo in df.groupby('Obra_ID'):
 df_inst = pd.DataFrame(resultados)
 
 # --- DASHBOARD ---
+col1, _ = st.columns([1, 3])
+with col1:
+    st.metric("Total Obras Principales", df[df['Es_Principal']]['Nombre'].nunique())
+
 st.subheader("Obras por Instancia Actual")
-conteo = df_inst['Instancia'].value_counts().reindex(orden_etapas, fill_value=0).reset_index()
+conteo = df_inst['Instancia'].value_counts().reindex(orden_etapas.keys(), fill_value=0).reset_index()
 conteo.columns = ['Etapa', 'Cantidad']
 
-fig = px.bar(conteo, x='Etapa', y='Cantidad', title="Distribución de Obras")
+fig = px.bar(conteo, x='Etapa', y='Cantidad', title="Distribución de Obras según su última etapa con progreso")
 st.plotly_chart(fig, use_container_width=True)
 
+st.subheader("Listado Detallado")
 st.dataframe(df)
