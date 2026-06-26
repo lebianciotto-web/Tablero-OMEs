@@ -59,13 +59,20 @@ def calcular_instancias(df):
 df = cargar_datos()
 df_inst = calcular_instancias(df)
 
-# Procesamiento para gráfico
-conteo = df_inst['Instancia'].value_counts().reindex(
-    ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
-     'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado'], 
-    fill_value=0
-).reset_index()
-conteo.columns = ['Etapa', 'Cantidad']
+# 3. PROCESAMIENTO (Más robusto)
+df_inst = calcular_instancias(df)
+
+# Definimos las etapas obligatorias
+etapas_orden = ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
+                'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado']
+
+# Verificamos si df_inst tiene datos antes de intentar el value_counts
+if not df_inst.empty and 'Instancia' in df_inst.columns:
+    conteo = df_inst['Instancia'].value_counts().reindex(etapas_orden, fill_value=0).reset_index()
+    conteo.columns = ['Etapa', 'Cantidad']
+else:
+    # Creamos un dataframe vacío con ceros si no hay datos
+    conteo = pd.DataFrame({'Etapa': etapas_orden, 'Cantidad': 0})
 
 # 4. DASHBOARD VISUAL
 col1, col2 = st.columns(2)
