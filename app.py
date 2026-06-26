@@ -1,28 +1,20 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
-# Ahora que ya importaste 'st', ya puedes usar el decorador abajo
-@st.cache_data
-def cargar_datos():
-
-
+st.title("Diagnóstico de Datos")
 
 @st.cache_data
 def cargar_datos():
-    st.write("Muestra de datos en % completado:", df['% completado'].head(10))
     df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     df.columns = df.columns.str.strip()
-    
-    # 1. Limpiar la columna % completado:
-    # Quitamos el símbolo %, reemplazamos comas por puntos (si las hubiera) y convertimos a número
-    if '% completado' in df.columns:
-        # Convertimos a string primero para poder manipular el texto
-        df['% completado'] = df['% completado'].astype(str).str.replace('%', '').str.replace(',', '.')
-        # Convertimos a numérico real (si es 50%, quedará como 0.5)
-        df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce') / 100
-        # Rellenamos nulos con 0
-        df['% completado'] = df['% completado'].fillna(0)
-    
-    df['Número de esquema'] = df['Número de esquema'].astype(str)
     return df
+
+df = cargar_datos()
+
+# Esto nos mostrará la verdad absoluta de lo que hay en el archivo
+st.write("Columnas detectadas:", df.columns.tolist())
+st.write("Primeras 10 filas de la columna '% completado':")
+st.write(df['% completado'].head(10))
+
+# Verificar el tipo de dato
+st.write("Tipo de dato de la columna:", df['% completado'].dtype)
