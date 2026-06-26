@@ -1,45 +1,53 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import streamlit as st
-import pandas as pd
 
+# 1. Cargar y limpiar datos
 @st.cache_data
-def load_data():
-    # 1. Leer el archivo forzando el separador ;
-    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=0)
-    
-    # 2. LIMPIEZA CRÍTICA: Eliminar espacios en blanco de los nombres de columnas
+def cargar_datos():
+    # Usamos sep=';' y skiprows=8 como ya habíamos definido
+    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     df.columns = df.columns.str.strip()
     
-    # 3. Asegurar que las columnas clave sean numéricas (ignorar errores si están vacías)
-    if '% completado' in df.columns:
-        df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce')
-    
-    # 4. Debug: Imprimir columnas si sigue fallando (esto aparecerá en tu app)
-    # st.write("Columnas detectadas:", df.columns.tolist())
-    
+    # Aseguramos que la columna de esquema sea tratada como string para detectar el punto
+    df['Número de esquema'] = df['Número de esquema'].astype(str)
     return df
 
-df = load_data()
+df = cargar_datos()
 
-# Configuración de página
-st.set_page_config(layout="wide")
-st.title("Dashboard de Obras - UNE")
+# 2. Lógica para asignar instancia
+def calcular_instancia(df):
+    orden_etapas = ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
+                    'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado']
+    
+    resultados = []
+    # Agrupamos por bloques (cada vez que aparece un número entero, inicia un nuevo bloque)
+    bloque_actual = None
+    
+    for _, fila in df.iterrows():
+        esquema = fila['Número de esquema']
+        
+        # Si no tiene punto, es Tarea Principal
+        if '.' not in esquema:
+            bloque_actual = fila['Nombre']
+        else:
+            # Es sub-tarea, calculamos si está al 100%
+            if float(fila['% completado']) == 1.0:
+                resultados.append({
+                    'Obra': bloque_actual,
+                    'Instancia': fila['Nombre']
+                })
+    
+    return pd.DataFrame(resultados)
 
-# Sidebar: Filtros
-aeropuerto = st.sidebar.multiselect("Aeropuerto", df['Aero'].unique())
-estado = st.sidebar.multiselect("Instancia", df['Nombre'].unique())
+# 3. Preparar gráfico
+df_instancias = calcular_instancia(df)
 
-# KPIs
-col1, col2, col3 = st.columns(3)
-col1.metric("Total OMEs", df['N° OME'].nunique())
-col2.metric("Valor POA", f"${df['POA'].sum():,.0f}")
-col3.metric("Avance Promedio", f"{df['% completado'].mean()*100:.1f}%")
+# Contamos cuántas obras están en cada instancia (tomamos la última completada por obra)
+resumen = df_instancias.sort_values('Instancia').groupby('Obra').tail(1)
+conteo = resumen['Instancia'].value_counts().reindex(orden_etapas, fill_value=0).reset_index()
 
-# Gráfico de barras (Instancias)
-fig = px.bar(df, x='Nombre', y='POA', color='Aero', title="Distribución de Obras")
+# 4. Visualización
+st.subheader("Obras por Instancia Actual")
+fig = px.bar(conteo, x='Instancia', y='count', title="Cantidad de Obras según su última etapa completada")
 st.plotly_chart(fig, use_container_width=True)
-
-# Listado
-st.dataframe(df)
