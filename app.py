@@ -19,10 +19,8 @@ def cargar_datos():
     )
     df.columns = df.columns.str.strip()
 
-    # Forzamos string para detectar el punto en el N° de esquema
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
 
-    # % completado a numérico (viene con coma decimal)
     df['% completado'] = (
         df['% completado']
         .astype(str)
@@ -30,7 +28,6 @@ def cargar_datos():
         .str.replace(',', '.', regex=False)
         .astype(float)
     )
-    # Si vinieron como 80 en lugar de 0.8, normalizamos
     if df['% completado'].max() > 1.5:
         df['% completado'] = df['% completado'] / 100.0
 
@@ -39,7 +36,7 @@ def cargar_datos():
 df = cargar_datos()
 
 # ============================================================
-# 2. IDENTIFICAR TAREAS PRINCIPALES Y SUB-TAREAS
+# 2. TAREAS PRINCIPALES Y SUB-TAREAS
 # ============================================================
 df['Es_Principal'] = ~df['Número de esquema'].str.contains(r'\.', regex=True, na=False)
 df['Obra_ID'] = df['Es_Principal'].cumsum()
@@ -47,20 +44,22 @@ df['Obra_ID'] = df['Es_Principal'].cumsum()
 # ============================================================
 # 3. ETAPAS DEL FLUJO (en orden)
 # ============================================================
-orden_etapas = {
-    'Pliego':                 'Pliego',
-    'Revisión DOM':           'Revisión DOM',
-    'Presupuesto':            'Presupuesto',
-    'Documentación en papel': 'Documentación en papel',
-    'ORSNA':                  'ORSNA',
-    'Adjudicación':           'Adjudicación',
-    'Ejecución':              'Ejecución',
-    'CAO presentado':         'CAO presentado',
-}
+orden_etapas = [
+    'Pliego',
+    'Revisión DOM',
+    'Presupuesto',
+    'Documentación en papel',
+    'ORSNA',
+    'Adjudicación',
+    'Ejecución',
+    'CAO presentado',
+]
 
 # ============================================================
 # 4. DETECTAR INSTANCIA ACTUAL DE CADA OBRA
 # ============================================================
+TOL = 1e-6  # tolerancia numérica
+
 resultados = []
 
 for obra_id, grupo in df.groupby('Obra_ID'):
@@ -73,22 +72,43 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     subtareas = grupo[~grupo['Es_Principal']].copy()
     subtareas['Nombre_norm'] = subtareas['Nombre'].astype(str).str.strip().str.lower()
 
-    instancia_actual = "Finalizada"
-    hay_progreso = False
+    # Construimos un dict {etapa: pct} respetando el orden del flujo
+    etapas_pct = []
+    for etapa in orden_etapas:
+        match = subtareas[subtareas['Nombre_norm'] == etapa.lower()]
+        if not match.empty:
+            etapas_pct.append((etapa, float(match['% completado'].iloc[0])))
 
-    for etapa_clave in orden_etapas.keys():
-        match = subtareas[subtareas['Nombre_norm'] == etapa_clave.lower()]
-        if match.empty:
-            continue
-        pct = match['% completado'].iloc[0]
-        if pct > 0:
-            hay_progreso = True
-        if pct < 1.0:
-            instancia_actual = orden_etapas[etapa_clave]
-            break
+    instancia_actual = "Sin iniciar"
+    estado = "sin_iniciar"
 
-    if not hay_progreso:
-        instancia_actual = "Sin iniciar"
+    if etapas_pct:
+        # 1) ¿Hay alguna en curso (0 < pct < 1)?
+        en_curso = next(
+            ((e, p) for e, p in etapas_pct if TOL < p < 1.0 - TOL),
+            None
+        )
+        if en_curso:
+            instancia_actual = f"En curso: {en_curso[0]}"
+            estado = "en_curso"
+        else:
+            # 2) ¿Todas finalizadas?
+            if all(p >= 1.0 - TOL for _, p in etapas_pct):
+                instancia_actual = "Finalizada"
+                estado = "finalizada"
+            # 3) ¿Ninguna iniciada?
+            elif all(p <= TOL for _, p in etapas_pct):
+                instancia_actual = "Sin iniciar"
+                estado = "sin_iniciar"
+            # 4) Entre etapas: primera con pct=0 después de las completadas
+            else:
+                pendiente = next(
+                    (e for e, p in etapas_pct if p <= TOL),
+                    None
+                )
+                if pendiente:
+                    instancia_actual = f"Pendiente: {pendiente}"
+                    estado = "pendiente"
 
     resultados.append({
         'N° OME':    n_ome,
@@ -96,6 +116,7 @@ for obra_id, grupo in df.groupby('Obra_ID'):
         'Obra':      nombre_obra,
         '% Avance':  round(avance_obra * 100, 1) if avance_obra <= 1 else round(avance_obra, 1),
         'Instancia': instancia_actual,
+        'Estado':    estado,
     })
 
 df_inst = pd.DataFrame(resultados)
@@ -107,22 +128,22 @@ st.sidebar.header("Filtros")
 aeros = sorted([a for a in df_inst['Aero'].dropna().unique() if str(a).strip() != ''])
 sel_aero = st.sidebar.multiselect("Aeropuerto (Aero)", aeros, default=aeros)
 
-etapas_disp = list(orden_etapas.values()) + ['Finalizada', 'Sin iniciar']
-sel_etapa = st.sidebar.multiselect("Instancia", etapas_disp, default=etapas_disp)
+instancias_disp = sorted(df_inst['Instancia'].unique().tolist())
+sel_inst = st.sidebar.multiselect("Instancia", instancias_disp, default=instancias_disp)
 
 df_filtrado = df_inst[
     df_inst['Aero'].isin(sel_aero) &
-    df_inst['Instancia'].isin(sel_etapa)
+    df_inst['Instancia'].isin(sel_inst)
 ]
 
 # ============================================================
 # 6. INDICADORES
 # ============================================================
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Obras", len(df_inst))
-col2.metric("En Ejecución",       (df_inst['Instancia'] == 'Ejecución').sum())
-col3.metric("Con CAO presentado", (df_inst['Instancia'] == 'CAO presentado').sum())
-col4.metric("Finalizadas",        (df_inst['Instancia'] == 'Finalizada').sum())
+col1.metric("Total Obras",   len(df_inst))
+col2.metric("En curso",      (df_inst['Estado'] == 'en_curso').sum())
+col3.metric("Pendientes",    (df_inst['Estado'] == 'pendiente').sum())
+col4.metric("Finalizadas",   (df_inst['Estado'] == 'finalizada').sum())
 
 # ============================================================
 # 7. GRÁFICO DE BARRAS POR INSTANCIA
@@ -132,7 +153,6 @@ st.subheader("Obras por Instancia Actual")
 conteo = (
     df_filtrado['Instancia']
     .value_counts()
-    .reindex(etapas_disp, fill_value=0)
     .reset_index()
 )
 conteo.columns = ['Etapa', 'Cantidad']
@@ -142,7 +162,7 @@ fig = px.bar(
     x='Etapa',
     y='Cantidad',
     text='Cantidad',
-    title="Distribución de obras según la primera etapa no finalizada",
+    title="Distribución de obras según su instancia actual",
     color='Etapa',
 )
 fig.update_traces(textposition='outside')
@@ -153,7 +173,11 @@ st.plotly_chart(fig, use_container_width=True)
 # 8. LISTADO DETALLADO
 # ============================================================
 st.subheader("Listado detallado de obras")
-st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+st.dataframe(
+    df_filtrado.drop(columns=['Estado']),
+    use_container_width=True,
+    hide_index=True,
+)
 
 # ============================================================
 # 9. DETALLE DE TAREAS Y SUB-TAREAS
