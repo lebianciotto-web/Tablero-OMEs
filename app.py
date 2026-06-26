@@ -10,7 +10,7 @@ st.title("Dashboard de Obras - UNE")
 # Por ahora simulamos la carga de tu CSV
 @st.cache_data(ttl=600) # Se refresca cada 10 minutos automáticamente
 def cargar_datos():
-    df = pd.read_csv("tu_archivo.csv") # En el futuro, reemplaza por conexión a SharePoint
+    df = pd.read_csv("PR. OMES UNE.csv") # En el futuro, reemplaza por conexión a SharePoint
     return df
 
 df = cargar_datos()
