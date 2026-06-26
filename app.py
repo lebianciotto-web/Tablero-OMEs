@@ -13,15 +13,12 @@ def load_data():
 
 df = load_data()
 
-# Ahora, reemplaza 'Aero' por el nombre exacto que veas en pantalla
-# Ejemplo: si el log dice 'Aero ', usa df['Aero ']
-aeropuerto = st.sidebar.multiselect("Aeropuerto", df['Aero'].unique())
 # Configuración de página
 st.set_page_config(layout="wide")
 st.title("Dashboard de Obras - UNE")
 
 # Sidebar: Filtros
-aeropuerto = st.sidebar.multiselect("Aeropuerto", df['Aero '].unique())
+aeropuerto = st.sidebar.multiselect("Aeropuerto", df['Aero'].unique())
 estado = st.sidebar.multiselect("Instancia", df['Nombre'].unique())
 
 # KPIs
