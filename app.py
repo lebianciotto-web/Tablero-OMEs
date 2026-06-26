@@ -1,35 +1,72 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
-st.title("Diagnóstico de Datos")
+st.set_page_config(layout="wide")
+st.title("Dashboard de OMEs - UNE")
+
+# 1. CARGA Y LIMPIEZA DE DATOS
 @st.cache_data
 def cargar_datos():
-    # Leemos el archivo saltando las filas de metadatos
+    # Carga el archivo con separador punto y coma y saltando los metadatos iniciales
     df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     df.columns = df.columns.str.strip()
     
-    # --- LIMPIEZA DE LA COLUMNA DE PORCENTAJES ---
+    # Limpieza de la columna de porcentaje
     if '% completado' in df.columns:
-        # Convertimos a string, quitamos el '%', reemplazamos coma por punto
         df['% completado'] = df['% completado'].astype(str).str.replace('%', '').str.replace(',', '.')
-        # Convertimos a número real. 'coerce' convierte errores (ej. celdas vacías) a NaN
-        df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce')
-        # Si el valor original era 50, ahora es 50. Lo dividimos por 100 para que sea 0.5
-        df['% completado'] = df['% completado'] / 100
-        # Rellenamos los valores vacíos con 0
+        df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce') / 100
         df['% completado'] = df['% completado'].fillna(0)
     
-    # Aseguramos que el esquema sea texto para detectar puntos
+    # Asegurar que el esquema sea texto para detectar jerarquía
     df['Número de esquema'] = df['Número de esquema'].astype(str)
-    
     return df
 
+# 2. LÓGICA DE INSTANCIAS (Jerarquía)
+def calcular_instancias(df):
+    orden_etapas = ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
+                    'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado']
+    
+    resultados = []
+    bloque_actual = None
+    
+    for _, fila in df.iterrows():
+        esquema = str(fila['Número de esquema'])
+        # Si no tiene punto es Tarea Principal
+        if '.' not in esquema:
+            bloque_actual = fila['Nombre']
+        else:
+            # Si es sub-tarea y está al 100% (o muy cerca)
+            if float(fila['% completado']) >= 0.99:
+                resultados.append({'Obra': bloque_actual, 'Instancia': fila['Nombre']})
+    
+    df_res = pd.DataFrame(resultados)
+    if not df_res.empty:
+        return df_res.groupby('Obra').tail(1)
+    return pd.DataFrame(columns=['Obra', 'Instancia'])
+
+# 3. EJECUCIÓN
 df = cargar_datos()
+df_inst = calcular_instancias(df)
 
-# Esto nos mostrará la verdad absoluta de lo que hay en el archivo
-st.write("Columnas detectadas:", df.columns.tolist())
-st.write("Primeras 10 filas de la columna '% completado':")
-st.write(df['% completado'].head(10))
+# Procesamiento para gráfico
+conteo = df_inst['Instancia'].value_counts().reindex(
+    ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
+     'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado'], 
+    fill_value=0
+).reset_index()
+conteo.columns = ['Etapa', 'Cantidad']
 
-# Verificar el tipo de dato
-st.write("Tipo de dato de la columna:", df['% completado'].dtype)
+# 4. DASHBOARD VISUAL
+col1, col2 = st.columns(2)
+with col1:
+    # Contamos tareas principales (aquellas sin punto en el número de esquema)
+    total_omes = df[~df['Número de esquema'].str.contains('\.', na=False)]['Nombre'].nunique()
+    st.metric("Total OMEs (Principales)", total_omes)
+
+st.subheader("Obras por Instancia Actual")
+fig = px.bar(conteo, x='Etapa', y='Cantidad', title="Cantidad de Obras según su última etapa completada")
+st.plotly_chart(fig, use_container_width=True)
+
+st.subheader("Listado Detallado")
+st.dataframe(df)
