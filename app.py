@@ -5,67 +5,94 @@ import plotly.express as px
 st.set_page_config(layout="wide")
 st.title("Dashboard de Obras - UNE")
 
+# ---------- CARGA DE DATOS ----------
 @st.cache_data
 def cargar_datos():
-    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
+    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8, decimal=',')
     df.columns = df.columns.str.strip()
-    
-    # Limpieza de porcentajes: quita '%' y comas, convierte a decimal
-    if '% completado' in df.columns:
-        col = df['% completado'].astype(str).str.strip().str.replace('%', '').str.replace(',', '.')
-        df['% completado'] = pd.to_numeric(col, errors='coerce').fillna(0)
-        df['% completado'] = df['% completado'].apply(lambda x: x / 100 if x > 1 else x)
-    
+    # Forzamos string para poder buscar el punto
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
+    # % completado a numérico (viene con coma decimal)
+    df['% completado'] = (
+        df['% completado'].astype(str).str.replace(',', '.').astype(float)
+    )
     return df
 
 df = cargar_datos()
 
-# Lista de palabras clave que aparecen en tus sub-tareas
-# El código buscará si el nombre de la tarea contiene estas palabras
+# ---------- IDENTIFICAR TAREAS PRINCIPALES Y SUB-TAREAS ----------
+# Principal = el "Número de esquema" NO contiene punto (ej: "1", "2", "3")
+# Sub-tarea = contiene punto (ej: "1.1", "2.3")
+df['Es_Principal'] = ~df['Número de esquema'].str.contains(r'\.', regex=True, na=False)
+df['Obra_ID'] = df['Es_Principal'].cumsum()
+
+# ---------- ETAPAS EN ORDEN ----------
 orden_etapas = {
     'Pliego': 'Pliego',
-    'Revisión DOM': 'DOM',
+    'Revisión DOM': 'Revisión DOM',
     'Presupuesto': 'Presupuesto',
-    'Documentación en papel': 'Documentación',
+    'Documentación en papel': 'Documentación en papel',
     'ORSNA': 'ORSNA',
     'Adjudicación': 'Adjudicación',
     'Ejecución': 'Ejecución',
-    'CAO presentado': 'CAO'
+    'CAO presentado': 'CAO presentado',
 }
 
+# ---------- DETECTAR ÚLTIMA ETAPA CON PROGRESO ----------
 resultados = []
-df['Es_Principal'] = ~df['Número de esquema'].str.contains('\.')
-df['Obra_ID'] = df['Es_Principal'].cumsum()
-
 for obra_id, grupo in df.groupby('Obra_ID'):
-    nombre_obra = grupo.iloc[0]['Nombre']
-    ultima_etapa_encontrada = "Ninguna"
-    
-    # Buscamos de atrás hacia adelante (de CAO a Pliego)
-    for etapa_larga, palabra_clave in reversed(list(orden_etapas.items())):
-        match = grupo[grupo['Nombre'].str.contains(palabra_clave, case=False, na=False)]
-        
-        if not match.empty:
-            if match.iloc[0]['% completado'] > 0:
-                ultima_etapa_encontrada = etapa_larga
-                break
-            
-    resultados.append({'Obra': nombre_obra, 'Instancia': ultima_etapa_encontrada})
+    fila_principal = grupo[grupo['Es_Principal']].iloc[0]
+    nombre_obra = fila_principal['Nombre']
+    aero = fila_principal.get('Aero', '')
+    n_ome = fila_principal.get('N° OME', '')
+    avance_obra = fila_principal.get('% completado', 0)
+
+    subtareas = grupo[~grupo['Es_Principal']]
+    ultima_etapa = "Ninguna"
+
+    # Recorremos las etapas en el orden definido y nos quedamos con
+    # la última que tenga % completado > 0
+    for etapa_clave in orden_etapas.keys():
+        match = subtareas[subtareas['Nombre'].str.contains(etapa_clave, case=False, na=False)]
+        if not match.empty and (match['% completado'] > 0).any():
+            ultima_etapa = orden_etapas[etapa_clave]
+
+    resultados.append({
+        'Obra': nombre_obra,
+        'Aero': aero,
+        'N° OME': n_ome,
+        '% Avance': avance_obra,
+        'Instancia': ultima_etapa,
+    })
 
 df_inst = pd.DataFrame(resultados)
 
-# --- DASHBOARD ---
-col1, _ = st.columns([1, 3])
+# ---------- DASHBOARD ----------
+col1, col2 = st.columns([1, 3])
 with col1:
-    st.metric("Total Obras Principales", df[df['Es_Principal']]['Nombre'].nunique())
+    st.metric("Total Obras Principales", df['Es_Principal'].sum())
+with col2:
+    st.metric("Obras en Ejecución / CAO",
+              df_inst['Instancia'].isin(['Ejecución', 'CAO presentado']).sum())
 
 st.subheader("Obras por Instancia Actual")
-conteo = df_inst['Instancia'].value_counts().reindex(orden_etapas.keys(), fill_value=0).reset_index()
+conteo = (
+    df_inst['Instancia']
+    .value_counts()
+    .reindex(list(orden_etapas.values()) + ['Ninguna'], fill_value=0)
+    .reset_index()
+)
 conteo.columns = ['Etapa', 'Cantidad']
 
-fig = px.bar(conteo, x='Etapa', y='Cantidad', title="Distribución de Obras según su última etapa con progreso")
+fig = px.bar(
+    conteo, x='Etapa', y='Cantidad',
+    title="Distribución de Obras según su última etapa con progreso",
+    text='Cantidad'
+)
 st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("Listado Detallado")
-st.dataframe(df)
+st.subheader("Listado Detallado por Obra")
+st.dataframe(df_inst, use_container_width=True)
+
+with st.expander("Ver todas las tareas y sub-tareas"):
+    st.dataframe(df, use_container_width=True)
