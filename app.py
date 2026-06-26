@@ -5,33 +5,120 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # ============================================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN 16:9 COMPACTA
 # ============================================================
 st.set_page_config(
     layout="wide",
-    page_title="Tablero de Control - OMEs",
-    page_icon="📊",
+    page_title="Tablero OMEs · Aeropuertos Argentina",
+    page_icon="✈",
 )
 
+# ============================================================
+# ESTILOS — AVIATION PASTEL
+# ============================================================
 st.markdown("""
 <style>
-    .main { background-color: #F4F8FC; }
-    .block-container { padding-top: 1rem; padding-bottom: 1rem; }
-    h1, h2, h3 { color: #0B3D91; }
-    .kpi-card {
-        background: white; padding: 18px 20px; border-radius: 14px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08); text-align: left; height: 110px;
+    /* ---------- BASE ---------- */
+    html, body, [class*="css"] {
+        font-family: 'Segoe UI', 'Inter', sans-serif;
     }
-    .kpi-title { font-size: 13px; color: #6B7280; font-weight: 600; letter-spacing: .5px;}
-    .kpi-value { font-size: 32px; font-weight: 800; color: #0B5FA5; margin-top: 4px;}
-    .kpi-value.red { color: #DC2626; }
+    .main { background-color: #EDF2F4; }
+    .block-container {
+        padding-top: 0.8rem !important;
+        padding-bottom: 0.5rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        max-width: 100% !important;
+    }
+    header[data-testid="stHeader"] { background: transparent; height: 0; }
+    #MainMenu, footer { visibility: hidden; }
+
+    /* ---------- HEADER ---------- */
     .header-bar {
-        background: linear-gradient(90deg,#E8F1FB,#FFFFFF);
-        padding: 14px 20px; border-radius: 14px;
-        display: flex; justify-content: space-between; align-items: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 14px;
+        background: linear-gradient(100deg, #1B4965 0%, #3A7CA5 100%);
+        padding: 10px 22px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(27,73,101,0.18);
+        margin-bottom: 10px;
+        color: white;
     }
-    .header-title { font-size: 26px; font-weight: 800; color: #0B3D91; }
+    .header-title {
+        font-size: 18px; font-weight: 700;
+        letter-spacing: 1.2px; color: white;
+    }
+    .header-sub {
+        font-size: 11px; color: #BEE9E8;
+        letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .header-right {
+        text-align: right; font-size: 11px;
+        color: #BEE9E8; letter-spacing: 0.5px;
+    }
+    .header-right b { color: white; font-size: 13px; letter-spacing: 1px; }
+
+    /* ---------- KPI CARDS ---------- */
+    .kpi-card {
+        background: white;
+        padding: 10px 14px;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(27,73,101,0.08);
+        border-left: 4px solid #5FA8D3;
+        height: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .kpi-card.alert  { border-left-color: #E29578; }
+    .kpi-card.ok     { border-left-color: #86C6A4; }
+    .kpi-card.warn   { border-left-color: #F1B963; }
+    .kpi-title {
+        font-size: 10px; color: #6B7C93;
+        font-weight: 600; letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    .kpi-value {
+        font-size: 26px; font-weight: 700;
+        color: #1B4965; line-height: 1.1; margin-top: 2px;
+    }
+    .kpi-value.alert { color: #C75D44; }
+    .kpi-value.ok    { color: #4F9D75; }
+
+    /* ---------- PANELES ---------- */
+    .panel {
+        background: white;
+        border-radius: 10px;
+        padding: 10px 14px;
+        box-shadow: 0 1px 4px rgba(27,73,101,0.08);
+    }
+    .panel-title {
+        font-size: 11px; font-weight: 700;
+        color: #1B4965; letter-spacing: 1.2px;
+        text-transform: uppercase;
+        border-bottom: 1px solid #EDF2F4;
+        padding-bottom: 4px; margin-bottom: 6px;
+    }
+
+    /* ---------- SIDEBAR ---------- */
+    section[data-testid="stSidebar"] {
+        background: #1B4965;
+    }
+    section[data-testid="stSidebar"] * { color: #E8F1F8 !important; }
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #BEE9E8 !important;
+        font-size: 12px !important;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+    }
+
+    /* ---------- TABLA ---------- */
+    [data-testid="stDataFrame"] {
+        border-radius: 8px;
+        overflow: hidden;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -42,35 +129,24 @@ st.markdown("""
 def cargar_datos():
     df = pd.read_csv(
         "PR. OMES UNE.csv",
-        sep=';',
-        skiprows=8,
-        decimal=',',
-        encoding='utf-8'
+        sep=';', skiprows=8, decimal=',', encoding='utf-8'
     )
     df.columns = df.columns.str.strip()
 
-    # ---------- Columna L (índice 11) = link SAP Ariba ----------
     if df.shape[1] > 11:
         nombre_col_l = df.columns[11]
         df.rename(columns={nombre_col_l: 'Link_Ariba'}, inplace=True)
     else:
         df['Link_Ariba'] = ''
 
-    # Limpieza del link
     df['Link_Ariba'] = (
-        df['Link_Ariba']
-        .astype(str)
-        .str.strip()
+        df['Link_Ariba'].astype(str).str.strip()
         .replace({'nan': '', 'None': '', 'NaT': ''})
     )
-
-    # ---------- Número de esquema como texto ----------
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
 
-    # ---------- % completado a numérico ----------
     df['% completado'] = (
-        df['% completado']
-        .astype(str)
+        df['% completado'].astype(str)
         .str.replace('%', '', regex=False)
         .str.replace(',', '.', regex=False)
         .astype(float)
@@ -78,7 +154,6 @@ def cargar_datos():
     if df['% completado'].max() > 1.5:
         df['% completado'] = df['% completado'] / 100.0
 
-    # ---------- Fechas ----------
     for col in ['Comienzo', 'Finalización']:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors='coerce', dayfirst=True)
@@ -88,7 +163,7 @@ def cargar_datos():
 df = cargar_datos()
 
 # ============================================================
-# 2. TAREAS PRINCIPALES Y SUB-TAREAS
+# 2. TAREAS Y SUB-TAREAS
 # ============================================================
 df['Es_Principal'] = ~df['Número de esquema'].str.contains(r'\.', regex=True, na=False)
 df['Obra_ID'] = df['Es_Principal'].cumsum()
@@ -98,26 +173,27 @@ orden_etapas = [
     'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado',
 ]
 etapas_upper = [
-    'PLIEGO', 'REVISIÓN DOM', 'PRESUPUESTO', 'DOC. EN PAPEL',
-    'ORSNA', 'ADJUDICACIÓN', 'EJECUCIÓN', 'CAO PRESENTADO'
+    'PLIEGO', 'REV. DOM', 'PRESUPUESTO', 'DOC. PAPEL',
+    'ORSNA', 'ADJUDIC.', 'EJECUCIÓN', 'CAO'
 ]
 mapa_upper = dict(zip(orden_etapas, etapas_upper))
 
+# Paleta pastel aeronáutica
 colores_etapas = {
-    'PLIEGO': '#A8D8F0',
-    'REVISIÓN DOM': '#F39C58',
-    'PRESUPUESTO': '#A8D26F',
-    'DOC. EN PAPEL': '#E15A5A',
-    'ORSNA': '#E76FA1',
-    'ADJUDICACIÓN': '#9B59B6',
-    'EJECUCIÓN': '#1F8A4C',
-    'CAO PRESENTADO': '#3FA9B5',
-    'FINALIZADA': '#2E86C1',
-    'SIN INICIAR': '#BDC3C7',
+    'PLIEGO':       '#BEE9E8',
+    'REV. DOM':     '#A8DADC',
+    'PRESUPUESTO':  '#F6E7CB',
+    'DOC. PAPEL':   '#F1B963',
+    'ORSNA':        '#E29578',
+    'ADJUDIC.':     '#B6A8D3',
+    'EJECUCIÓN':    '#86C6A4',
+    'CAO':          '#5FA8D3',
+    'FINALIZADA':   '#1B4965',
+    'SIN INICIAR':  '#D3D9DE',
 }
 
 # ============================================================
-# 3. INSTANCIA ACTUAL POR OBRA
+# 3. INSTANCIA POR OBRA
 # ============================================================
 TOL = 1e-6
 resultados = []
@@ -132,14 +208,12 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     fin    = fila.get('Finalización', pd.NaT)
     link_ariba = str(fila.get('Link_Ariba', '')).strip()
 
-    # Fallback: buscar link en sub-tareas si la principal no lo tiene
     if not link_ariba:
         links_sub = grupo['Link_Ariba'].dropna().astype(str).str.strip()
         links_sub = links_sub[links_sub != '']
         if not links_sub.empty:
             link_ariba = links_sub.iloc[0]
 
-    # Validamos que sea un URL aparente
     if link_ariba and not link_ariba.lower().startswith(('http://', 'https://')):
         link_ariba = ''
 
@@ -166,7 +240,6 @@ for obra_id, grupo in df.groupby('Obra_ID'):
             if pend:
                 instancia = mapa_upper[pend]
 
-    # Estado: Completada / En Curso / Crítica
     hoy = pd.Timestamp(datetime.now().date())
     if instancia == "FINALIZADA":
         estado = "Completada"
@@ -177,38 +250,23 @@ for obra_id, grupo in df.groupby('Obra_ID'):
 
     resultados.append({
         'ID': n_ome,
-        'NOMBRE DE OBRA': nombre,
-        'AEROPUERTO': aero,
+        'OBRA': nombre,
+        'AERO': aero,
         'INSTANCIA': instancia,
         '% AVANCE': round(avance * 100, 0),
         'ESTADO': estado,
-        'FECHA INICIO': inicio,
-        'VENCIMIENTO': fin,
+        'INICIO': inicio,
+        'VENC.': fin,
         'SAP ARIBA': link_ariba,
     })
 
 df_inst = pd.DataFrame(resultados)
 
 # ============================================================
-# 4. HEADER
+# 4. SIDEBAR
 # ============================================================
-fecha_actual = datetime.now().strftime("%d/%m/%Y")
-st.markdown(f"""
-<div class="header-bar">
-    <div class="header-title">📊 TABLERO DE CONTROL - GESTIÓN DE OMEs (PLANNERS)</div>
-    <div style="text-align:right;">
-        <div style="font-weight:700; color:#0B3D91;">GESTOR DE PROYECTOS</div>
-        <div style="font-size:12px; color:#6B7280;">Actualizado: {fecha_actual}</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ============================================================
-# 5. FILTROS LATERALES
-# ============================================================
-st.sidebar.markdown("## 🔎 FILTROS")
-
-aeros = sorted([a for a in df_inst['AEROPUERTO'].dropna().unique() if str(a).strip()])
+st.sidebar.markdown("### FILTROS")
+aeros = sorted([a for a in df_inst['AERO'].dropna().unique() if str(a).strip()])
 sel_aero = st.sidebar.multiselect("Aeropuerto", aeros, default=aeros)
 
 estados = ['Completada', 'En Curso', 'Crítica']
@@ -217,70 +275,97 @@ sel_estado = st.sidebar.multiselect("Estado", estados, default=estados)
 instancias_disp = etapas_upper + ['FINALIZADA', 'SIN INICIAR']
 sel_inst = st.sidebar.multiselect("Instancia", instancias_disp, default=instancias_disp)
 
-META_FINALIZADAS = st.sidebar.slider("Meta % obras finalizadas", 0, 100, 85)
-
-solo_con_link = st.sidebar.checkbox("Mostrar solo obras con link SAP Ariba", value=False)
+META_FINALIZADAS = st.sidebar.slider("Meta % finalizadas", 0, 100, 85)
+solo_con_link = st.sidebar.checkbox("Solo obras con SAP Ariba", value=False)
 
 df_f = df_inst[
-    df_inst['AEROPUERTO'].isin(sel_aero) &
+    df_inst['AERO'].isin(sel_aero) &
     df_inst['ESTADO'].isin(sel_estado) &
     df_inst['INSTANCIA'].isin(sel_inst)
 ]
-
 if solo_con_link:
     df_f = df_f[df_f['SAP ARIBA'].str.len() > 0]
 
 # ============================================================
-# 6. KPIs + DONUT + BARRAS
+# 5. HEADER
+# ============================================================
+fecha_actual = datetime.now().strftime("%d/%m/%Y · %H:%M")
+st.markdown(f"""
+<div class="header-bar">
+    <div>
+        <div class="header-title">✈ TABLERO DE CONTROL · OBRAS MENORES (OMEs)</div>
+        <div class="header-sub">Gerencia de Mantenimiento · Aeropuertos Argentina</div>
+    </div>
+    <div class="header-right">
+        <b>GESTOR DE PROYECTOS</b><br>
+        Actualizado: {fecha_actual}
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ============================================================
+# 6. KPIs COMPACTOS (fila horizontal)
 # ============================================================
 total = len(df_f)
-activas = (df_f['ESTADO'] == 'En Curso').sum()
-atrasadas = (df_f['ESTADO'] == 'Crítica').sum()
-finalizadas = (df_f['ESTADO'] == 'Completada').sum()
+activas = int((df_f['ESTADO'] == 'En Curso').sum())
+atrasadas = int((df_f['ESTADO'] == 'Crítica').sum())
+finalizadas = int((df_f['ESTADO'] == 'Completada').sum())
 pct_finalizadas = (finalizadas / total * 100) if total else 0
+con_link = int((df_f['SAP ARIBA'].str.len() > 0).sum())
 
-col_kpi, col_donut, col_bar = st.columns([1.1, 1.2, 2.7])
+k1, k2, k3, k4, k5 = st.columns(5)
+with k1:
+    st.markdown(f"""<div class="kpi-card">
+    <div class="kpi-title">Total OMEs</div>
+    <div class="kpi-value">{total}</div></div>""", unsafe_allow_html=True)
+with k2:
+    st.markdown(f"""<div class="kpi-card">
+    <div class="kpi-title">En Curso</div>
+    <div class="kpi-value">{activas}</div></div>""", unsafe_allow_html=True)
+with k3:
+    st.markdown(f"""<div class="kpi-card ok">
+    <div class="kpi-title">Finalizadas</div>
+    <div class="kpi-value ok">{finalizadas}</div></div>""", unsafe_allow_html=True)
+with k4:
+    st.markdown(f"""<div class="kpi-card alert">
+    <div class="kpi-title">Críticas</div>
+    <div class="kpi-value alert">{atrasadas}</div></div>""", unsafe_allow_html=True)
+with k5:
+    st.markdown(f"""<div class="kpi-card warn">
+    <div class="kpi-title">Con SAP Ariba</div>
+    <div class="kpi-value">{con_link}</div></div>""", unsafe_allow_html=True)
 
-with col_kpi:
-    st.markdown(f"""
-    <div class="kpi-card"><div class="kpi-title">📁 TOTAL OMEs</div>
-    <div class="kpi-value">{total:,}</div></div>
-    """, unsafe_allow_html=True)
-    st.write("")
-    st.markdown(f"""
-    <div class="kpi-card"><div class="kpi-title">📈 TAREAS ACTIVAS</div>
-    <div class="kpi-value">{activas:,}</div></div>
-    """, unsafe_allow_html=True)
-    st.write("")
-    st.markdown(f"""
-    <div class="kpi-card"><div class="kpi-title">⚠️ ATRASADAS</div>
-    <div class="kpi-value red">{atrasadas:,}</div></div>
-    """, unsafe_allow_html=True)
+st.write("")
 
-with col_donut:
-    st.markdown("#### OBRAS FINALIZADAS")
+# ============================================================
+# 7. GRÁFICOS (donut + barras) en una sola fila compacta
+# ============================================================
+g1, g2 = st.columns([1, 2.5])
+
+with g1:
+    st.markdown('<div class="panel-title">Cumplimiento de Meta</div>', unsafe_allow_html=True)
     fig_donut = go.Figure(go.Pie(
-        values=[pct_finalizadas, 100 - pct_finalizadas],
-        labels=['Finalizadas', 'Pendientes'],
-        hole=0.72,
-        marker_colors=['#0B5FA5', '#E5EEF7'],
-        textinfo='none',
-        sort=False,
+        values=[pct_finalizadas, max(0, 100 - pct_finalizadas)],
+        hole=0.78,
+        marker=dict(colors=['#5FA8D3', '#EDF2F4'], line=dict(color='white', width=2)),
+        textinfo='none', sort=False,
     ))
     fig_donut.update_layout(
         showlegend=False,
-        margin=dict(l=0, r=0, t=10, b=10),
-        height=280,
-        annotations=[dict(
-            text=f"<b>{pct_finalizadas:.0f}%</b><br><span style='font-size:12px'>FINALIZADAS</span>",
-            x=0.5, y=0.5, font_size=28, showarrow=False
-        )],
+        margin=dict(l=0, r=0, t=0, b=0),
+        height=210,
+        paper_bgcolor='white',
+        annotations=[
+            dict(text=f"<b style='font-size:26px;color:#1B4965'>{pct_finalizadas:.0f}%</b>"
+                      f"<br><span style='font-size:9px;color:#6B7C93;letter-spacing:1.5px'>FINALIZADAS</span>"
+                      f"<br><span style='font-size:9px;color:#86C6A4'>Meta {META_FINALIZADAS}%</span>",
+                 x=0.5, y=0.5, showarrow=False),
+        ],
     )
-    st.plotly_chart(fig_donut, use_container_width=True)
-    st.caption(f"🎯 META: {META_FINALIZADAS}%  ·  Actual: {pct_finalizadas:.1f}%")
+    st.plotly_chart(fig_donut, use_container_width=True, config={'displayModeBar': False})
 
-with col_bar:
-    st.markdown("#### OBRAS POR INSTANCIA")
+with g2:
+    st.markdown('<div class="panel-title">Obras por Instancia</div>', unsafe_allow_html=True)
     conteo = (
         df_f['INSTANCIA'].value_counts()
         .reindex(etapas_upper, fill_value=0)
@@ -291,65 +376,63 @@ with col_bar:
         conteo, x='Etapa', y='Cantidad', text='Cantidad',
         color='Etapa', color_discrete_map=colores_etapas,
     )
-    fig_bar.update_traces(textposition='outside')
-    fig_bar.update_layout(
-        showlegend=False, xaxis_tickangle=-25,
-        margin=dict(l=10, r=10, t=10, b=10), height=300,
-        yaxis_title=None, xaxis_title=None, plot_bgcolor='white',
+    fig_bar.update_traces(
+        textposition='outside',
+        textfont=dict(size=11, color='#1B4965', family='Segoe UI'),
+        marker_line_width=0,
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    fig_bar.update_layout(
+        showlegend=False,
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=210,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        yaxis=dict(title=None, gridcolor='#EDF2F4', tickfont=dict(color='#6B7C93', size=10)),
+        xaxis=dict(title=None, tickfont=dict(color='#1B4965', size=10), tickangle=-15),
+    )
+    st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
 
 # ============================================================
-# 7. LISTADO DETALLADO
+# 8. LISTADO DETALLADO
 # ============================================================
-st.markdown("### 📋 LISTADO DE OMEs DETALLADO")
+st.markdown('<div class="panel-title">Listado Detallado de OMEs</div>', unsafe_allow_html=True)
 
 def fmt_estado(s):
-    if s == "Completada":
-        return "🔵 Completada"
-    if s == "En Curso":
-        return "🟢 En Curso"
-    if s == "Crítica":
-        return "🔴 Crítica"
+    if s == "Completada": return "● Completada"
+    if s == "En Curso":   return "● En Curso"
+    if s == "Crítica":    return "● Crítica"
     return s
 
 df_show = df_f.copy()
 df_show['ESTADO'] = df_show['ESTADO'].map(fmt_estado)
-df_show['FECHA INICIO'] = df_show['FECHA INICIO'].dt.strftime('%d/%m/%Y').fillna('-')
-df_show['VENCIMIENTO']  = df_show['VENCIMIENTO'].dt.strftime('%d/%m/%Y').fillna('-')
+df_show['INICIO'] = df_show['INICIO'].dt.strftime('%d/%m/%y').fillna('—')
+df_show['VENC.']  = df_show['VENC.'].dt.strftime('%d/%m/%y').fillna('—')
 
-cols_order = [
-    'ID', 'NOMBRE DE OBRA', 'AEROPUERTO', 'INSTANCIA',
-    '% AVANCE', 'ESTADO', 'FECHA INICIO', 'VENCIMIENTO', 'SAP ARIBA'
-]
+cols_order = ['ID', 'OBRA', 'AERO', 'INSTANCIA',
+              '% AVANCE', 'ESTADO', 'INICIO', 'VENC.', 'SAP ARIBA']
 df_show = df_show[cols_order]
 
 st.dataframe(
     df_show,
     use_container_width=True,
     hide_index=True,
+    height=230,
     column_config={
         "% AVANCE": st.column_config.ProgressColumn(
             "% AVANCE", format="%d%%", min_value=0, max_value=100,
         ),
         "ID": st.column_config.TextColumn(width="small"),
-        "NOMBRE DE OBRA": st.column_config.TextColumn(width="large"),
+        "OBRA": st.column_config.TextColumn(width="large"),
+        "AERO": st.column_config.TextColumn(width="small"),
+        "INSTANCIA": st.column_config.TextColumn(width="medium"),
+        "ESTADO": st.column_config.TextColumn(width="small"),
+        "INICIO": st.column_config.TextColumn(width="small"),
+        "VENC.": st.column_config.TextColumn(width="small"),
         "SAP ARIBA": st.column_config.LinkColumn(
             "SAP ARIBA",
             help="Abrir la obra en SAP Ariba",
-            display_text="🔗 Abrir",
+            display_text="Abrir ›",
             width="small",
         ),
     },
 )
-
-# ============================================================
-# 8. DATOS CRUDOS
-# ============================================================
-with st.expander("🔍 Ver todas las tareas y sub-tareas (datos crudos)"):
-    st.dataframe(
-        df[['Número de esquema', 'Nombre', 'Aero', 'N° OME',
-            '% completado', 'Link_Ariba', 'Es_Principal', 'Obra_ID']],
-        use_container_width=True,
-        hide_index=True,
-    )
