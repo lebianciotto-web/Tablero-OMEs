@@ -16,7 +16,7 @@ def cargar_datos():
 df = cargar_datos()
 
 # Sidebar: Filtros
-aeropuerto = st.sidebar.multiselect("Aero", df['Aero'].unique())
+aeropuerto = st.sidebar.multiselect("Aeropuerto", df['Aero'].unique())
 estado = st.sidebar.multiselect("Instancia", df['Nombre'].unique())
 
 # KPIs
