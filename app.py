@@ -18,7 +18,6 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
 <style>
-    /* ---------- BASE ---------- */
     html, body, [class*="css"] {
         font-family: 'Segoe UI', 'Inter', sans-serif;
     }
@@ -33,7 +32,6 @@ st.markdown("""
     header[data-testid="stHeader"] { background: transparent; height: 0; }
     #MainMenu, footer { visibility: hidden; }
 
-    /* ---------- HEADER ---------- */
     .header-bar {
         background: linear-gradient(100deg, #1B4965 0%, #3A7CA5 100%);
         padding: 10px 22px;
@@ -59,7 +57,6 @@ st.markdown("""
     }
     .header-right b { color: white; font-size: 13px; letter-spacing: 1px; }
 
-    /* ---------- KPI CARDS ---------- */
     .kpi-card {
         background: white;
         padding: 10px 14px;
@@ -86,25 +83,16 @@ st.markdown("""
     .kpi-value.alert { color: #C75D44; }
     .kpi-value.ok    { color: #4F9D75; }
 
-    /* ---------- PANELES ---------- */
-    .panel {
-        background: white;
-        border-radius: 10px;
-        padding: 10px 14px;
-        box-shadow: 0 1px 4px rgba(27,73,101,0.08);
-    }
     .panel-title {
         font-size: 11px; font-weight: 700;
         color: #1B4965; letter-spacing: 1.2px;
         text-transform: uppercase;
         border-bottom: 1px solid #EDF2F4;
         padding-bottom: 4px; margin-bottom: 6px;
+        margin-top: 8px;
     }
 
-    /* ---------- SIDEBAR ---------- */
-    section[data-testid="stSidebar"] {
-        background: #1B4965;
-    }
+    section[data-testid="stSidebar"] { background: #1B4965; }
     section[data-testid="stSidebar"] * { color: #E8F1F8 !important; }
     section[data-testid="stSidebar"] h2,
     section[data-testid="stSidebar"] h3 {
@@ -114,7 +102,6 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* ---------- TABLA ---------- */
     [data-testid="stDataFrame"] {
         border-radius: 8px;
         overflow: hidden;
@@ -133,6 +120,7 @@ def cargar_datos():
     )
     df.columns = df.columns.str.strip()
 
+    # Columna L (índice 11) = link SAP Ariba
     if df.shape[1] > 11:
         nombre_col_l = df.columns[11]
         df.rename(columns={nombre_col_l: 'Link_Ariba'}, inplace=True)
@@ -178,7 +166,6 @@ etapas_upper = [
 ]
 mapa_upper = dict(zip(orden_etapas, etapas_upper))
 
-# Paleta pastel aeronáutica
 colores_etapas = {
     'PLIEGO':       '#BEE9E8',
     'REV. DOM':     '#A8DADC',
@@ -263,26 +250,64 @@ for obra_id, grupo in df.groupby('Obra_ID'):
 df_inst = pd.DataFrame(resultados)
 
 # ============================================================
-# 4. SIDEBAR
+# 3.5  CUATRIMESTRE (sobre fecha de inicio)
+# C1: Ene-Abr · C2: May-Ago · C3: Sep-Dic
+# ============================================================
+def calcular_cuatrimestre(fecha):
+    if pd.isna(fecha):
+        return "Sin fecha"
+    mes = fecha.month
+    if mes <= 4:
+        c = "C1"
+    elif mes <= 8:
+        c = "C2"
+    else:
+        c = "C3"
+    return f"{c} {fecha.year}"
+
+df_inst['CUATRIMESTRE'] = df_inst['INICIO'].apply(calcular_cuatrimestre)
+
+# ============================================================
+# 4. SIDEBAR — FILTROS DESPLEGABLES
 # ============================================================
 st.sidebar.markdown("### FILTROS")
+
+# ---------- AEROPUERTO ----------
 aeros = sorted([a for a in df_inst['AERO'].dropna().unique() if str(a).strip()])
-sel_aero = st.sidebar.multiselect("Aeropuerto", aeros, default=aeros)
+opciones_aero = ["Todos"] + aeros
+sel_aero = st.sidebar.selectbox("Aeropuerto", opciones_aero, index=0)
 
-estados = ['Completada', 'En Curso', 'Crítica']
-sel_estado = st.sidebar.multiselect("Estado", estados, default=estados)
-
+# ---------- INSTANCIA ----------
 instancias_disp = etapas_upper + ['FINALIZADA', 'SIN INICIAR']
-sel_inst = st.sidebar.multiselect("Instancia", instancias_disp, default=instancias_disp)
+instancias_existentes = [i for i in instancias_disp if i in df_inst['INSTANCIA'].unique()]
+opciones_inst = ["Todas"] + instancias_existentes
+sel_inst = st.sidebar.selectbox("Instancia", opciones_inst, index=0)
 
+# ---------- CUATRIMESTRE ----------
+def sort_key_cuatri(c):
+    if c == "Sin fecha":
+        return (9999, 9)
+    partes = c.split()
+    return (int(partes[1]), int(partes[0][1]))
+
+cuatris = sorted(df_inst['CUATRIMESTRE'].unique(), key=sort_key_cuatri)
+opciones_cuatri = ["Todos"] + cuatris
+sel_cuatri = st.sidebar.selectbox("Cuatrimestre", opciones_cuatri, index=0)
+
+# ---------- EXTRAS ----------
+st.sidebar.markdown("---")
 META_FINALIZADAS = st.sidebar.slider("Meta % finalizadas", 0, 100, 85)
 solo_con_link = st.sidebar.checkbox("Solo obras con SAP Ariba", value=False)
 
-df_f = df_inst[
-    df_inst['AERO'].isin(sel_aero) &
-    df_inst['ESTADO'].isin(sel_estado) &
-    df_inst['INSTANCIA'].isin(sel_inst)
-]
+# ---------- APLICAMOS FILTROS ----------
+df_f = df_inst.copy()
+
+if sel_aero != "Todos":
+    df_f = df_f[df_f['AERO'] == sel_aero]
+if sel_inst != "Todas":
+    df_f = df_f[df_f['INSTANCIA'] == sel_inst]
+if sel_cuatri != "Todos":
+    df_f = df_f[df_f['CUATRIMESTRE'] == sel_cuatri]
 if solo_con_link:
     df_f = df_f[df_f['SAP ARIBA'].str.len() > 0]
 
@@ -304,7 +329,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 6. KPIs COMPACTOS (fila horizontal)
+# 6. KPIs COMPACTOS
 # ============================================================
 total = len(df_f)
 activas = int((df_f['ESTADO'] == 'En Curso').sum())
@@ -338,7 +363,7 @@ with k5:
 st.write("")
 
 # ============================================================
-# 7. GRÁFICOS (donut + barras) en una sola fila compacta
+# 7. GRÁFICOS (donut + barras)
 # ============================================================
 g1, g2 = st.columns([1, 2.5])
 
@@ -408,7 +433,7 @@ df_show['ESTADO'] = df_show['ESTADO'].map(fmt_estado)
 df_show['INICIO'] = df_show['INICIO'].dt.strftime('%d/%m/%y').fillna('—')
 df_show['VENC.']  = df_show['VENC.'].dt.strftime('%d/%m/%y').fillna('—')
 
-cols_order = ['ID', 'OBRA', 'AERO', 'INSTANCIA',
+cols_order = ['ID', 'OBRA', 'AERO', 'INSTANCIA', 'CUATRIMESTRE',
               '% AVANCE', 'ESTADO', 'INICIO', 'VENC.', 'SAP ARIBA']
 df_show = df_show[cols_order]
 
@@ -425,6 +450,7 @@ st.dataframe(
         "OBRA": st.column_config.TextColumn(width="large"),
         "AERO": st.column_config.TextColumn(width="small"),
         "INSTANCIA": st.column_config.TextColumn(width="medium"),
+        "CUATRIMESTRE": st.column_config.TextColumn(width="small"),
         "ESTADO": st.column_config.TextColumn(width="small"),
         "INICIO": st.column_config.TextColumn(width="small"),
         "VENC.": st.column_config.TextColumn(width="small"),
