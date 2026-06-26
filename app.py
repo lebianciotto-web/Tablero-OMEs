@@ -1,5 +1,6 @@
 @st.cache_data
 def cargar_datos():
+    st.write("Muestra de datos en % completado:", df['% completado'].head(10))
     df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     df.columns = df.columns.str.strip()
     
