@@ -10,46 +10,52 @@ def cargar_datos():
     df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     df.columns = df.columns.str.strip()
     
-    # 1. Limpieza de Porcentaje (Convertir '0,6' a 0.6)
+    # Limpieza de porcentajes
     df['% completado'] = df['% completado'].astype(str).str.replace(',', '.')
     df['% completado'] = pd.to_numeric(df['% completado'], errors='coerce').fillna(0)
-    # Si detecta números > 1, los divide por 100
     df['% completado'] = df['% completado'].apply(lambda x: x / 100 if x > 1 else x)
     
-    # 2. Asegurar esquema como string
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
     return df
 
 df = cargar_datos()
 
-# --- LÓGICA DE INSTANCIAS (Simplificada) ---
-# Definimos las etapas para el orden lógico
-etapas_lista = ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
+# --- LÓGICA DE INSTANCIAS ---
+orden_etapas = ['Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel', 
                 'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado']
 
-# Creamos una columna temporal para identificar la obra principal
+resultados = []
+# Agrupamos por obra (bloques 1.0, 2.0, etc)
+# Creamos un identificador de bloque: cada vez que el esquema no tiene punto, es una nueva obra
 df['Es_Principal'] = ~df['Número de esquema'].str.contains('\.')
-df['Obra_ID'] = df['Es_Principal'].cumsum() 
+df['Obra_ID'] = df['Es_Principal'].cumsum()
 
-# Filtramos solo sub-tareas que tengan progreso > 0
-progreso = df[~df['Es_Principal'] & (df['% completado'] > 0)].copy()
+for obra_id, grupo in df.groupby('Obra_ID'):
+    nombre_obra = grupo.iloc[0]['Nombre']
+    ultima_etapa_encontrada = "Ninguna"
+    
+    # Buscamos en orden inverso: la última etapa que tenga progreso > 0
+    for etapa in reversed(orden_etapas):
+        # Buscamos si el nombre de la etapa aparece en el nombre de la tarea (case insensitive)
+        subtarea = grupo[grupo['Nombre'].str.contains(etapa, case=False, na=False)]
+        if not subtarea.empty and subtarea.iloc[0]['% completado'] > 0:
+            ultima_etapa_encontrada = etapa
+            break
+            
+    resultados.append({'Obra': nombre_obra, 'Instancia': ultima_etapa_encontrada})
 
-# Encontramos la última sub-tarea con progreso por cada obra
-ultima_etapa = progreso.groupby('Obra_ID').apply(lambda x: x.iloc[-1])
+df_inst = pd.DataFrame(resultados)
 
 # --- DASHBOARD ---
-col1, col2 = st.columns(2)
+col1, _ = st.columns([1, 3])
 with col1:
-    st.metric("Total OMEs (Principales)", df[df['Es_Principal']]['Nombre'].nunique())
+    st.metric("Total OMEs", df[df['Es_Principal']]['Nombre'].nunique())
 
 st.subheader("Obras por Instancia Actual")
-
-# Preparamos los datos para el gráfico
-conteo = ultima_etapa['Nombre'].value_counts().reindex(etapas_lista, fill_value=0).reset_index()
+conteo = df_inst['Instancia'].value_counts().reindex(orden_etapas, fill_value=0).reset_index()
 conteo.columns = ['Etapa', 'Cantidad']
 
-fig = px.bar(conteo, x='Etapa', y='Cantidad', title="Distribución de Obras según su última etapa activa")
+fig = px.bar(conteo, x='Etapa', y='Cantidad', title="Distribución de Obras")
 st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("Listado Detallado")
 st.dataframe(df)
