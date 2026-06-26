@@ -7,7 +7,7 @@ import pandas as pd
 @st.cache_data
 def load_data():
     # 1. Leer el archivo forzando el separador ;
-    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=0)
+    df = pd.read_csv("PR. OMES UNE.csv", sep=';', skiprows=8)
     
     # 2. LIMPIEZA CRÍTICA: Eliminar espacios en blanco de los nombres de columnas
     df.columns = df.columns.str.strip()
