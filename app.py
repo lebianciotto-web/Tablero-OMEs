@@ -13,19 +13,14 @@ st.set_page_config(
     page_icon="📊",
 )
 
-# ---------- ESTILOS ----------
 st.markdown("""
 <style>
     .main { background-color: #F4F8FC; }
     .block-container { padding-top: 1rem; padding-bottom: 1rem; }
     h1, h2, h3 { color: #0B3D91; }
     .kpi-card {
-        background: white;
-        padding: 18px 20px;
-        border-radius: 14px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        text-align: left;
-        height: 110px;
+        background: white; padding: 18px 20px; border-radius: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08); text-align: left; height: 110px;
     }
     .kpi-title { font-size: 13px; color: #6B7280; font-weight: 600; letter-spacing: .5px;}
     .kpi-value { font-size: 32px; font-weight: 800; color: #0B5FA5; margin-top: 4px;}
@@ -34,11 +29,9 @@ st.markdown("""
         background: linear-gradient(90deg,#E8F1FB,#FFFFFF);
         padding: 14px 20px; border-radius: 14px;
         display: flex; justify-content: space-between; align-items: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        margin-bottom: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 14px;
     }
     .header-title { font-size: 26px; font-weight: 800; color: #0B3D91; }
-    .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,13 +42,35 @@ st.markdown("""
 def cargar_datos():
     df = pd.read_csv(
         "PR. OMES UNE.csv",
-        sep=';', skiprows=8, decimal=',', encoding='utf-8'
+        sep=';',
+        skiprows=8,
+        decimal=',',
+        encoding='utf-8'
     )
     df.columns = df.columns.str.strip()
+
+    # ---------- Columna L (índice 11) = link SAP Ariba ----------
+    if df.shape[1] > 11:
+        nombre_col_l = df.columns[11]
+        df.rename(columns={nombre_col_l: 'Link_Ariba'}, inplace=True)
+    else:
+        df['Link_Ariba'] = ''
+
+    # Limpieza del link
+    df['Link_Ariba'] = (
+        df['Link_Ariba']
+        .astype(str)
+        .str.strip()
+        .replace({'nan': '', 'None': '', 'NaT': ''})
+    )
+
+    # ---------- Número de esquema como texto ----------
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
 
+    # ---------- % completado a numérico ----------
     df['% completado'] = (
-        df['% completado'].astype(str)
+        df['% completado']
+        .astype(str)
         .str.replace('%', '', regex=False)
         .str.replace(',', '.', regex=False)
         .astype(float)
@@ -63,6 +78,7 @@ def cargar_datos():
     if df['% completado'].max() > 1.5:
         df['% completado'] = df['% completado'] / 100.0
 
+    # ---------- Fechas ----------
     for col in ['Comienzo', 'Finalización']:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors='coerce', dayfirst=True)
@@ -81,15 +97,23 @@ orden_etapas = [
     'Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel',
     'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado',
 ]
-etapas_upper = ['PLIEGO', 'REVISIÓN DOM', 'PRESUPUESTO', 'DOC. EN PAPEL',
-                'ORSNA', 'ADJUDICACIÓN', 'EJECUCIÓN', 'CAO PRESENTADO']
+etapas_upper = [
+    'PLIEGO', 'REVISIÓN DOM', 'PRESUPUESTO', 'DOC. EN PAPEL',
+    'ORSNA', 'ADJUDICACIÓN', 'EJECUCIÓN', 'CAO PRESENTADO'
+]
 mapa_upper = dict(zip(orden_etapas, etapas_upper))
 
 colores_etapas = {
-    'PLIEGO': '#A8D8F0', 'REVISIÓN DOM': '#F39C58', 'PRESUPUESTO': '#A8D26F',
-    'DOC. EN PAPEL': '#E15A5A', 'ORSNA': '#E76FA1', 'ADJUDICACIÓN': '#9B59B6',
-    'EJECUCIÓN': '#1F8A4C', 'CAO PRESENTADO': '#3FA9B5',
-    'FINALIZADA': '#2E86C1', 'SIN INICIAR': '#BDC3C7',
+    'PLIEGO': '#A8D8F0',
+    'REVISIÓN DOM': '#F39C58',
+    'PRESUPUESTO': '#A8D26F',
+    'DOC. EN PAPEL': '#E15A5A',
+    'ORSNA': '#E76FA1',
+    'ADJUDICACIÓN': '#9B59B6',
+    'EJECUCIÓN': '#1F8A4C',
+    'CAO PRESENTADO': '#3FA9B5',
+    'FINALIZADA': '#2E86C1',
+    'SIN INICIAR': '#BDC3C7',
 }
 
 # ============================================================
@@ -106,6 +130,18 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     avance = fila.get('% completado', 0)
     inicio = fila.get('Comienzo', pd.NaT)
     fin    = fila.get('Finalización', pd.NaT)
+    link_ariba = str(fila.get('Link_Ariba', '')).strip()
+
+    # Fallback: buscar link en sub-tareas si la principal no lo tiene
+    if not link_ariba:
+        links_sub = grupo['Link_Ariba'].dropna().astype(str).str.strip()
+        links_sub = links_sub[links_sub != '']
+        if not links_sub.empty:
+            link_ariba = links_sub.iloc[0]
+
+    # Validamos que sea un URL aparente
+    if link_ariba and not link_ariba.lower().startswith(('http://', 'https://')):
+        link_ariba = ''
 
     sub = grupo[~grupo['Es_Principal']].copy()
     sub['Nombre_norm'] = sub['Nombre'].astype(str).str.strip().str.lower()
@@ -148,6 +184,7 @@ for obra_id, grupo in df.groupby('Obra_ID'):
         'ESTADO': estado,
         'FECHA INICIO': inicio,
         'VENCIMIENTO': fin,
+        'SAP ARIBA': link_ariba,
     })
 
 df_inst = pd.DataFrame(resultados)
@@ -182,14 +219,19 @@ sel_inst = st.sidebar.multiselect("Instancia", instancias_disp, default=instanci
 
 META_FINALIZADAS = st.sidebar.slider("Meta % obras finalizadas", 0, 100, 85)
 
+solo_con_link = st.sidebar.checkbox("Mostrar solo obras con link SAP Ariba", value=False)
+
 df_f = df_inst[
     df_inst['AEROPUERTO'].isin(sel_aero) &
     df_inst['ESTADO'].isin(sel_estado) &
     df_inst['INSTANCIA'].isin(sel_inst)
 ]
 
+if solo_con_link:
+    df_f = df_f[df_f['SAP ARIBA'].str.len() > 0]
+
 # ============================================================
-# 6. KPI CARDS
+# 6. KPIs + DONUT + BARRAS
 # ============================================================
 total = len(df_f)
 activas = (df_f['ESTADO'] == 'En Curso').sum()
@@ -215,87 +257,8 @@ with col_kpi:
     <div class="kpi-value red">{atrasadas:,}</div></div>
     """, unsafe_allow_html=True)
 
-# ----- DONUT -----
 with col_donut:
     st.markdown("#### OBRAS FINALIZADAS")
     fig_donut = go.Figure(go.Pie(
         values=[pct_finalizadas, 100 - pct_finalizadas],
         labels=['Finalizadas', 'Pendientes'],
-        hole=0.72,
-        marker_colors=['#0B5FA5', '#E5EEF7'],
-        textinfo='none',
-        sort=False,
-    ))
-    fig_donut.update_layout(
-        showlegend=False,
-        margin=dict(l=0, r=0, t=10, b=10),
-        height=280,
-        annotations=[
-            dict(text=f"<b>{pct_finalizadas:.0f}%</b><br><span style='font-size:12px'>FINALIZADAS</span>",
-                 x=0.5, y=0.5, font_size=28, showarrow=False),
-        ],
-    )
-    st.plotly_chart(fig_donut, use_container_width=True)
-    st.caption(f"🎯 META: {META_FINALIZADAS}%  ·  Actual: {pct_finalizadas:.1f}%")
-
-# ----- BAR CHART -----
-with col_bar:
-    st.markdown("#### OBRAS POR INSTANCIA")
-    conteo = (
-        df_f['INSTANCIA'].value_counts()
-        .reindex(etapas_upper, fill_value=0)
-        .reset_index()
-    )
-    conteo.columns = ['Etapa', 'Cantidad']
-    fig_bar = px.bar(
-        conteo, x='Etapa', y='Cantidad', text='Cantidad',
-        color='Etapa', color_discrete_map=colores_etapas,
-    )
-    fig_bar.update_traces(textposition='outside')
-    fig_bar.update_layout(
-        showlegend=False, xaxis_tickangle=-25,
-        margin=dict(l=10, r=10, t=10, b=10), height=300,
-        yaxis_title=None, xaxis_title=None,
-        plot_bgcolor='white',
-    )
-    st.plotly_chart(fig_bar, use_container_width=True)
-
-# ============================================================
-# 7. LISTADO DETALLADO
-# ============================================================
-st.markdown("### 📋 LISTADO DE OMEs DETALLADO")
-
-# Colores por estado para el "dot"
-estado_color = {'Completada': '#3498DB', 'En Curso': '#27AE60', 'Crítica': '#E74C3C'}
-
-def fmt_estado(s):
-    color = estado_color.get(s, '#888')
-    return f"🔵 {s}" if s == "Completada" else ("🟢 " + s if s == "En Curso" else "🔴 " + s)
-
-df_show = df_f.copy()
-df_show['ESTADO'] = df_show['ESTADO'].map(fmt_estado)
-df_show['FECHA INICIO'] = df_show['FECHA INICIO'].dt.strftime('%d/%m/%Y').fillna('-')
-df_show['VENCIMIENTO']  = df_show['VENCIMIENTO'].dt.strftime('%d/%m/%Y').fillna('-')
-
-st.dataframe(
-    df_show,
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "% AVANCE": st.column_config.ProgressColumn(
-            "% AVANCE", format="%d%%", min_value=0, max_value=100,
-        ),
-        "ID": st.column_config.TextColumn(width="small"),
-        "NOMBRE DE OBRA": st.column_config.TextColumn(width="large"),
-    },
-)
-
-# ============================================================
-# 8. DATOS CRUDOS (opcional)
-# ============================================================
-with st.expander("🔍 Ver todas las tareas y sub-tareas (datos crudos)"):
-    st.dataframe(
-        df[['Número de esquema', 'Nombre', 'Aero', 'N° OME',
-            '% completado', 'Es_Principal', 'Obra_ID']],
-        use_container_width=True, hide_index=True,
-    )
