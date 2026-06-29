@@ -47,7 +47,7 @@ st.markdown(f"""
 <style>
     html, body, [class*="css"] {{
         font-family: 'Segoe UI', 'Inter', sans-serif;
-        font-size: 14px;
+        font-size: 15px;
     }}
     .stApp {{
         background-color: {COLOR_GRAY_BG};
@@ -91,31 +91,28 @@ st.markdown(f"""
         border: 3px solid rgba(255,255,255,0.15);
         border-radius: 50%;
     }}
-    .header-title {{ font-size: 22px; font-weight: 700; letter-spacing: 1.5px; color: white; position: relative; z-index: 1;}}
-    .header-sub   {{ font-size: 13px; color: {COLOR_GREEN_L}; letter-spacing: 0.5px; text-transform: uppercase; position: relative; z-index: 1;}}
-    .header-right {{ text-align: right; font-size: 13px; color: {COLOR_TEAL_L}; letter-spacing: 0.5px; position: relative; z-index: 1;}}
-    .header-right b {{ color: white; font-size: 15px; letter-spacing: 1px; }}
+    .header-title {{ font-size: 24px; font-weight: 700; letter-spacing: 1.5px; color: white; position: relative; z-index: 1;}}
+    .header-sub   {{ font-size: 14px; color: {COLOR_GREEN_L}; letter-spacing: 0.5px; text-transform: uppercase; position: relative; z-index: 1;}}
+    .header-right {{ text-align: right; font-size: 14px; color: {COLOR_TEAL_L}; letter-spacing: 0.5px; position: relative; z-index: 1;}}
+    .header-right b {{ color: white; font-size: 16px; letter-spacing: 1px; }}
 
     .kpi-card {{
         background: white; padding: 12px 16px; border-radius: 10px;
         box-shadow: 0 2px 6px rgba(30,105,117,0.10);
-        border-left: 4px solid {COLOR_TEAL}; height: 82px;
+        border-left: 4px solid {COLOR_TEAL}; height: 88px;
         display: flex; flex-direction: column; justify-content: center;
     }}
     .kpi-card.alert  {{ border-left-color: {COLOR_ALERT}; }}
     .kpi-card.ok     {{ border-left-color: {COLOR_GREEN}; }}
     .kpi-card.warn   {{ border-left-color: {COLOR_WARN}; }}
-    .kpi-card.gold   {{ border-left-color: {COLOR_GREEN_D}; }}
-    .kpi-title {{ font-size: 12px; color: {COLOR_GRAY}; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }}
-    .kpi-value {{ font-size: 30px; font-weight: 700; color: {COLOR_TEAL_D}; line-height: 1.1; margin-top: 4px; }}
+    .kpi-title {{ font-size: 13px; color: {COLOR_GRAY}; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }}
+    .kpi-value {{ font-size: 32px; font-weight: 700; color: {COLOR_TEAL_D}; line-height: 1.1; margin-top: 4px; }}
     .kpi-value.alert {{ color: {COLOR_ALERT}; }}
     .kpi-value.ok    {{ color: {COLOR_GREEN_D}; }}
     .kpi-value.warn  {{ color: #B88820; }}
-    .kpi-value.gold  {{ color: {COLOR_GREEN_D}; }}
-    .kpi-sub {{ font-size: 11px; color: {COLOR_GRAY}; margin-top: 2px; }}
 
     .panel-title {{
-        font-size: 13px; font-weight: 700; color: {COLOR_TEAL_D}; letter-spacing: 1.2px;
+        font-size: 14px; font-weight: 700; color: {COLOR_TEAL_D}; letter-spacing: 1.2px;
         text-transform: uppercase; border-bottom: 2px solid {COLOR_GREEN};
         padding-bottom: 5px; margin-bottom: 8px; margin-top: 14px;
         display: inline-block;
@@ -130,21 +127,21 @@ st.markdown(f"""
     section[data-testid="stSidebar"] label,
     section[data-testid="stSidebar"] p {{
         color: {COLOR_GREEN_L} !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         letter-spacing: 1.2px;
     }}
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div {{
         background-color: white !important;
         border: 1px solid {COLOR_GREEN} !important;
         border-radius: 6px !important;
-        min-height: 38px !important;
+        min-height: 40px !important;
     }}
     section[data-testid="stSidebar"] div[data-baseweb="select"] span,
     section[data-testid="stSidebar"] div[data-baseweb="select"] input,
     section[data-testid="stSidebar"] div[data-baseweb="tag"] {{
         color: {COLOR_TEAL_D} !important;
         font-weight: 600 !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
     }}
     section[data-testid="stSidebar"] div[data-baseweb="tag"] {{
         background-color: {COLOR_GREEN_L} !important;
@@ -156,7 +153,7 @@ st.markdown(f"""
 
     [data-testid="stDataFrame"] {{
         border-radius: 8px; overflow: hidden;
-        font-size: 14px !important;
+        font-size: 15px !important;
     }}
 
     div[data-testid="stDownloadButton"] button {{
@@ -166,7 +163,7 @@ st.markdown(f"""
         border-radius: 6px !important;
         padding: 8px 16px !important;
         font-weight: 600 !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         box-shadow: 0 2px 4px rgba(30,105,117,0.2);
     }}
     div[data-testid="stDownloadButton"] button:hover {{
@@ -459,20 +456,6 @@ ejecutadas  = int(df_f['_EJECUCION_FULL'].sum())
 pct_finalizadas = (finalizadas / total * 100) if total else 0
 pct_ejecutadas  = (ejecutadas  / total * 100) if total else 0
 
-if total > 0 and not df_f.empty:
-    agg_aero = df_f.groupby('AERO').agg(
-        total=('ID', 'count'),
-        finalizadas=('_CAO_FULL', 'sum'),
-    ).reset_index()
-    agg_aero['pct'] = agg_aero['finalizadas'] / agg_aero['total'] * 100
-    agg_aero = agg_aero.sort_values(['pct', 'total'], ascending=[False, False])
-    aero_top = agg_aero.iloc[0]
-    aero_top_nombre = aero_top['AERO']
-    aero_top_pct = aero_top['pct']
-else:
-    aero_top_nombre = "—"
-    aero_top_pct = 0
-
 k1, k2, k3, k4, k5, k6 = st.columns(6)
 with k1:
     st.markdown(f"""<div class="kpi-card">
@@ -500,15 +483,6 @@ with k6:
     <div class="kpi-value alert">{atrasadas}</div></div>""", unsafe_allow_html=True)
 
 st.write("")
-ka1, _ = st.columns([1, 5])
-with ka1:
-    st.markdown(f"""<div class="kpi-card gold">
-    <div class="kpi-title">🏆 Aeropuerto Top</div>
-    <div class="kpi-value gold">{aero_top_nombre}</div>
-    <div class="kpi-sub">{aero_top_pct:.0f}% finalizadas</div>
-    </div>""", unsafe_allow_html=True)
-
-st.write("")
 
 # ============================================================
 # 7. GRÁFICOS
@@ -524,11 +498,11 @@ def donut(pct, label, meta, color):
     ))
     fig.update_layout(
         showlegend=False, margin=dict(l=0, r=0, t=0, b=0),
-        height=220, paper_bgcolor='white',
+        height=230, paper_bgcolor='white',
         annotations=[
-            dict(text=f"<b style='font-size:28px;color:{COLOR_TEAL_D}'>{pct:.0f}%</b>"
-                      f"<br><span style='font-size:11px;color:{COLOR_GRAY};letter-spacing:1.5px'>{label}</span>"
-                      f"<br><span style='font-size:11px;color:{COLOR_GREEN_D}'>Meta {meta}%</span>",
+            dict(text=f"<b style='font-size:30px;color:{COLOR_TEAL_D}'>{pct:.0f}%</b>"
+                      f"<br><span style='font-size:12px;color:{COLOR_GRAY};letter-spacing:1.5px'>{label}</span>"
+                      f"<br><span style='font-size:12px;color:{COLOR_GREEN_D}'>Meta {meta}%</span>",
                  x=0.5, y=0.5, showarrow=False),
         ],
     )
@@ -557,14 +531,14 @@ with g3:
     )
     fig_bar.update_traces(
         textposition='outside',
-        textfont=dict(size=13, color=COLOR_TEAL_D, family='Segoe UI'),
+        textfont=dict(size=14, color=COLOR_TEAL_D, family='Segoe UI'),
         marker_line_width=0,
     )
     fig_bar.update_layout(
         showlegend=False, margin=dict(l=10, r=10, t=10, b=10),
-        height=220, plot_bgcolor='white', paper_bgcolor='white',
-        yaxis=dict(title=None, gridcolor=COLOR_GRAY_BG, tickfont=dict(color=COLOR_GRAY, size=12)),
-        xaxis=dict(title=None, tickfont=dict(color=COLOR_TEAL_D, size=12), tickangle=-15),
+        height=230, plot_bgcolor='white', paper_bgcolor='white',
+        yaxis=dict(title=None, gridcolor=COLOR_GRAY_BG, tickfont=dict(color=COLOR_GRAY, size=13)),
+        xaxis=dict(title=None, tickfont=dict(color=COLOR_TEAL_D, size=13), tickangle=-15),
     )
     st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
 
@@ -592,7 +566,7 @@ cols_order = ['ID', 'OBRA', 'AERO', 'INSTANCIA', 'CUATRIMESTRE',
 df_show = df_show[cols_order]
 
 st.dataframe(
-    df_show, use_container_width=True, hide_index=True, height=380,
+    df_show, use_container_width=True, hide_index=True, height=400,
     column_config={
         "% AVANCE": st.column_config.ProgressColumn("% AVANCE", format="%d%%", min_value=0, max_value=100),
         "ID": st.column_config.TextColumn(width="small"),
