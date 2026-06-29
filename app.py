@@ -18,9 +18,7 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
 <style>
-    html, body, [class*="css"] {
-        font-family: 'Segoe UI', 'Inter', sans-serif;
-    }
+    html, body, [class*="css"] { font-family: 'Segoe UI', 'Inter', sans-serif; }
     .main { background-color: #EDF2F4; }
     .block-container {
         padding-top: 0.8rem !important;
@@ -74,7 +72,6 @@ st.markdown("""
         font-size: 12px !important;
         letter-spacing: 1.2px;
     }
-    /* Dropdowns con buen contraste */
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
         background-color: white !important;
         border: 1px solid #5FA8D3 !important;
@@ -105,14 +102,12 @@ def cargar_datos():
     )
     df.columns = df.columns.str.strip()
 
-    # Columna G (índice 6) = Cuatrimestre
     if df.shape[1] > 6:
         nombre_col_g = df.columns[6]
         df.rename(columns={nombre_col_g: 'Cuatrimestre'}, inplace=True)
     else:
         df['Cuatrimestre'] = ''
 
-    # Columna L (índice 11) = link SAP Ariba
     if df.shape[1] > 11:
         nombre_col_l = df.columns[11]
         df.rename(columns={nombre_col_l: 'Link_Ariba'}, inplace=True)
@@ -152,15 +147,28 @@ df = cargar_datos()
 df['Es_Principal'] = ~df['Número de esquema'].str.contains(r'\.', regex=True, na=False)
 df['Obra_ID'] = df['Es_Principal'].cumsum()
 
-orden_etapas = [
-    'Pliego', 'Revisión DOM', 'Presupuesto', 'Documentación en papel',
-    'ORSNA', 'Adjudicación', 'Ejecución', 'CAO presentado',
+# ============================================================
+# 3. DEFINICIÓN DE ETAPAS — MATCHING POR KEYWORDS
+# ============================================================
+# Cada etapa se identifica por keywords flexibles en el nombre.
+# Esto resuelve casos como "Aprobación ORSNA", "Presentación a ORSNA",
+# "Rev. DOM", "Revisión por DOM", "Documentación papel", etc.
+# ============================================================
+etapas_def = [
+    # (clave_interna, etiqueta_corta, lista_de_keywords_que_deben_estar_todos)
+    ('Pliego',                 'PLIEGO',       [['pliego']]),
+    ('Revisión DOM',           'REV. DOM',     [['revisi', 'dom'], ['rev', 'dom']]),
+    ('Presupuesto',            'PRESUPUESTO',  [['presup']]),
+    ('Documentación en papel', 'DOC. PAPEL',   [['document', 'papel'], ['doc', 'papel']]),
+    ('ORSNA',                  'ORSNA',        [['orsna']]),
+    ('Adjudicación',           'ADJUDIC.',     [['adjudic']]),
+    ('Ejecución',              'EJECUCIÓN',    [['ejecuc']]),
+    ('CAO presentado',         'CAO',          [['cao']]),
 ]
-etapas_upper = [
-    'PLIEGO', 'REV. DOM', 'PRESUPUESTO', 'DOC. PAPEL',
-    'ORSNA', 'ADJUDIC.', 'EJECUCIÓN', 'CAO'
-]
-mapa_upper = dict(zip(orden_etapas, etapas_upper))
+
+orden_etapas = [e[0] for e in etapas_def]
+etapas_upper = [e[1] for e in etapas_def]
+mapa_upper   = dict(zip(orden_etapas, etapas_upper))
 
 colores_etapas = {
     'PLIEGO':       '#BEE9E8',
@@ -175,14 +183,21 @@ colores_etapas = {
     'SIN INICIAR':  '#D3D9DE',
 }
 
+def matchea_etapa(nombre_norm, sets_keywords):
+    """Devuelve True si el nombre normalizado matchea alguno de los sets de keywords."""
+    for kw_set in sets_keywords:
+        if all(kw in nombre_norm for kw in kw_set):
+            return True
+    return False
+
 # ============================================================
-# 3. INSTANCIA POR OBRA — LÓGICA CORREGIDA
-#  → PRIMERA etapa con pct < 100% (estricto)
-#  → 98% NO se considera completo (sin tolerancia de negocio)
+# 4. CÁLCULO DE INSTANCIA POR OBRA
+#  Regla: PRIMERA etapa con pct < 100% (estricto, sin tolerancia de negocio)
 # ============================================================
-TOL = 1e-6  # solo para tolerancia de punto flotante (1.0 vs 0.9999999)
+TOL = 1e-6   # solo para imprecisiones de float
 
 resultados = []
+debug_rows = []  # 👁️ para panel diagnóstico
 
 for obra_id, grupo in df.groupby('Obra_ID'):
     fila = grupo[grupo['Es_Principal']].iloc[0]
@@ -195,7 +210,6 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     cuatri = str(fila.get('Cuatrimestre', '')).strip()
     link_ariba = str(fila.get('Link_Ariba', '')).strip()
 
-    # Cuatrimestre desde sub-tareas si principal está vacío
     if not cuatri:
         c_sub = grupo['Cuatrimestre'].astype(str).str.strip()
         c_sub = c_sub[c_sub != '']
@@ -210,14 +224,20 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     if link_ariba and not link_ariba.lower().startswith(('http://', 'https://')):
         link_ariba = ''
 
+    # Sub-tareas
     sub = grupo[~grupo['Es_Principal']].copy()
     sub['Nombre_norm'] = sub['Nombre'].astype(str).str.strip().str.lower()
 
+    # ---------- MATCH POR KEYWORDS ----------
     etapas_pct = []
-    for etapa in orden_etapas:
-        m = sub[sub['Nombre_norm'] == etapa.lower()]
+    for etapa_clave, _, kw_sets in etapas_def:
+        # Buscamos cualquier sub-tarea que matchee los keywords
+        mask = sub['Nombre_norm'].apply(lambda s: matchea_etapa(s, kw_sets))
+        m = sub[mask]
         if not m.empty:
-            etapas_pct.append((etapa, float(m['% completado'].iloc[0])))
+            # Si hay varias coincidencias tomamos la de MAYOR % completado
+            pct = float(m['% completado'].max())
+            etapas_pct.append((etapa_clave, pct))
 
     # ---------- Métricas individuales ----------
     pct_ejecucion = next((p for e, p in etapas_pct if e == 'Ejecución'), 0)
@@ -229,13 +249,10 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     instancia = "SIN INICIAR"
     if etapas_pct:
         if cao_full:
-            # CAO presentado completo → obra Finalizada
             instancia = "FINALIZADAS"
         elif all(p <= TOL for _, p in etapas_pct):
-            # Ninguna etapa iniciada
             instancia = "SIN INICIAR"
         else:
-            # PRIMERA etapa con pct < 100% (en el orden del flujo)
             primera_incompleta = next(
                 (e for e, p in etapas_pct if p < 1.0 - TOL),
                 None
@@ -245,7 +262,7 @@ for obra_id, grupo in df.groupby('Obra_ID'):
             else:
                 instancia = "FINALIZADAS"
 
-    # ---------- Estado operativo ----------
+    # ---------- Estado ----------
     hoy = pd.Timestamp(datetime.now().date())
     if instancia == "FINALIZADAS":
         estado = "Completada"
@@ -277,10 +294,20 @@ for obra_id, grupo in df.groupby('Obra_ID'):
         '_CAO_FULL': cao_full,
     })
 
+    # ---------- Diagnóstico ----------
+    debug_rows.append({
+        'OBRA': nombre,
+        'AERO': aero,
+        'Sub-tareas en CSV': " | ".join(sub['Nombre'].astype(str).tolist()),
+        'Etapas detectadas (pct)': " | ".join([f"{e}={p*100:.0f}%" for e, p in etapas_pct]),
+        'Instancia asignada': instancia,
+    })
+
 df_inst = pd.DataFrame(resultados)
+df_debug = pd.DataFrame(debug_rows)
 
 # ============================================================
-# 4. SIDEBAR — FILTROS DESPLEGABLES
+# 5. SIDEBAR — FILTROS
 # ============================================================
 st.sidebar.markdown("### FILTROS")
 
@@ -292,10 +319,8 @@ instancias_existentes = [i for i in instancias_disp if i in df_inst['INSTANCIA']
 sel_inst = st.sidebar.selectbox("Instancia", ["Todas"] + instancias_existentes, index=0)
 
 def sort_key_cuatri(c):
-    if c == "Sin dato":
-        return 99
-    if c.startswith("C") and len(c) >= 2 and c[1].isdigit():
-        return int(c[1])
+    if c == "Sin dato": return 99
+    if c.startswith("C") and len(c) >= 2 and c[1].isdigit(): return int(c[1])
     return 50
 
 cuatris = sorted(df_inst['CUATRIMESTRE'].unique(), key=sort_key_cuatri)
@@ -305,13 +330,16 @@ st.sidebar.markdown("---")
 META_FINALIZADAS = st.sidebar.slider("Meta % finalizadas", 0, 100, 85)
 META_EJECUTADAS  = st.sidebar.slider("Meta % ejecutadas", 0, 100, 80)
 
+st.sidebar.markdown("---")
+modo_debug = st.sidebar.checkbox("🔍 Mostrar diagnóstico", value=False)
+
 df_f = df_inst.copy()
 if sel_aero   != "Todos": df_f = df_f[df_f['AERO'] == sel_aero]
 if sel_inst   != "Todas": df_f = df_f[df_f['INSTANCIA'] == sel_inst]
 if sel_cuatri != "Todos": df_f = df_f[df_f['CUATRIMESTRE'] == sel_cuatri]
 
 # ============================================================
-# 5. HEADER
+# 6. HEADER
 # ============================================================
 fecha_actual = datetime.now().strftime("%d/%m/%Y · %H:%M")
 st.markdown(f"""
@@ -328,7 +356,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 6. KPIs
+# 7. KPIs
 # ============================================================
 total = len(df_f)
 activas = int((df_f['ESTADO'] == 'En Curso').sum())
@@ -363,7 +391,7 @@ with k5:
 st.write("")
 
 # ============================================================
-# 7. GRÁFICOS — 2 DONUTS + BARRAS
+# 8. GRÁFICOS — 2 DONUTS + BARRAS
 # ============================================================
 g1, g2, g3 = st.columns([1, 1, 2.5])
 
@@ -375,10 +403,8 @@ def donut(pct, label, meta, color):
         textinfo='none', sort=False,
     ))
     fig.update_layout(
-        showlegend=False,
-        margin=dict(l=0, r=0, t=0, b=0),
-        height=210,
-        paper_bgcolor='white',
+        showlegend=False, margin=dict(l=0, r=0, t=0, b=0),
+        height=210, paper_bgcolor='white',
         annotations=[
             dict(text=f"<b style='font-size:26px;color:#1B4965'>{pct:.0f}%</b>"
                       f"<br><span style='font-size:9px;color:#6B7C93;letter-spacing:1.5px'>{label}</span>"
@@ -400,16 +426,13 @@ with g2:
 
 with g3:
     st.markdown('<div class="panel-title">Obras por Instancia</div>', unsafe_allow_html=True)
-
     conteo_dict = df_f['INSTANCIA'].value_counts().to_dict()
     conteo_dict['FINALIZADAS'] = int(df_f['_CAO_FULL'].sum())
-
     etapas_para_grafico = etapas_upper + ['FINALIZADAS']
     conteo = pd.DataFrame({
         'Etapa': etapas_para_grafico,
         'Cantidad': [conteo_dict.get(e, 0) for e in etapas_para_grafico]
     })
-
     fig_bar = px.bar(
         conteo, x='Etapa', y='Cantidad', text='Cantidad',
         color='Etapa', color_discrete_map=colores_etapas,
@@ -420,18 +443,15 @@ with g3:
         marker_line_width=0,
     )
     fig_bar.update_layout(
-        showlegend=False,
-        margin=dict(l=10, r=10, t=10, b=10),
-        height=210,
-        plot_bgcolor='white',
-        paper_bgcolor='white',
+        showlegend=False, margin=dict(l=10, r=10, t=10, b=10),
+        height=210, plot_bgcolor='white', paper_bgcolor='white',
         yaxis=dict(title=None, gridcolor='#EDF2F4', tickfont=dict(color='#6B7C93', size=10)),
         xaxis=dict(title=None, tickfont=dict(color='#1B4965', size=10), tickangle=-15),
     )
     st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
 
 # ============================================================
-# 8. LISTADO DETALLADO
+# 9. LISTADO DETALLADO
 # ============================================================
 st.markdown('<div class="panel-title">Listado Detallado de OMEs</div>', unsafe_allow_html=True)
 
@@ -451,14 +471,9 @@ cols_order = ['ID', 'OBRA', 'AERO', 'INSTANCIA', 'CUATRIMESTRE',
 df_show = df_show[cols_order]
 
 st.dataframe(
-    df_show,
-    use_container_width=True,
-    hide_index=True,
-    height=230,
+    df_show, use_container_width=True, hide_index=True, height=230,
     column_config={
-        "% AVANCE": st.column_config.ProgressColumn(
-            "% AVANCE", format="%d%%", min_value=0, max_value=100,
-        ),
+        "% AVANCE": st.column_config.ProgressColumn("% AVANCE", format="%d%%", min_value=0, max_value=100),
         "ID": st.column_config.TextColumn(width="small"),
         "OBRA": st.column_config.TextColumn(width="large"),
         "AERO": st.column_config.TextColumn(width="small"),
@@ -468,10 +483,17 @@ st.dataframe(
         "INICIO": st.column_config.TextColumn(width="small"),
         "VENC.": st.column_config.TextColumn(width="small"),
         "SAP ARIBA": st.column_config.LinkColumn(
-            "SAP ARIBA",
-            help="Abrir la obra en SAP Ariba",
-            display_text="Abrir ›",
-            width="small",
+            "SAP ARIBA", help="Abrir la obra en SAP Ariba",
+            display_text="Abrir ›", width="small",
         ),
     },
 )
+
+# ============================================================
+# 10. PANEL DE DIAGNÓSTICO (sólo si está activado)
+# ============================================================
+if modo_debug:
+    st.markdown('<div class="panel-title">🔍 Diagnóstico de detección de etapas</div>', unsafe_allow_html=True)
+    st.caption("Cómo está leyendo el código las sub-tareas de cada obra. "
+               "Si una etapa no aparece en 'Etapas detectadas', hay que ajustar el keyword en el código.")
+    st.dataframe(df_debug, use_container_width=True, hide_index=True, height=320)
