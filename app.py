@@ -32,7 +32,6 @@ st.markdown("""
     header[data-testid="stHeader"] { background: transparent; height: 0; }
     #MainMenu, footer { visibility: hidden; }
 
-    /* ---------- HEADER ---------- */
     .header-bar {
         background: linear-gradient(100deg, #1B4965 0%, #3A7CA5 100%);
         padding: 10px 22px; border-radius: 10px;
@@ -45,7 +44,6 @@ st.markdown("""
     .header-right { text-align: right; font-size: 11px; color: #BEE9E8; letter-spacing: 0.5px; }
     .header-right b { color: white; font-size: 13px; letter-spacing: 1px; }
 
-    /* ---------- KPI CARDS ---------- */
     .kpi-card {
         background: white; padding: 10px 14px; border-radius: 10px;
         box-shadow: 0 1px 4px rgba(27,73,101,0.08);
@@ -60,14 +58,12 @@ st.markdown("""
     .kpi-value.alert { color: #C75D44; }
     .kpi-value.ok    { color: #4F9D75; }
 
-    /* ---------- PANELES ---------- */
     .panel-title {
         font-size: 11px; font-weight: 700; color: #1B4965; letter-spacing: 1.2px;
         text-transform: uppercase; border-bottom: 1px solid #EDF2F4;
         padding-bottom: 4px; margin-bottom: 6px; margin-top: 8px;
     }
 
-    /* ---------- SIDEBAR ---------- */
     section[data-testid="stSidebar"] { background: #1B4965; }
     section[data-testid="stSidebar"] h1,
     section[data-testid="stSidebar"] h2,
@@ -78,7 +74,7 @@ st.markdown("""
         font-size: 12px !important;
         letter-spacing: 1.2px;
     }
-    /* ---------- FIX CONTRASTE DROPDOWNS ---------- */
+    /* Dropdowns con buen contraste */
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
         background-color: white !important;
         border: 1px solid #5FA8D3 !important;
@@ -92,7 +88,6 @@ st.markdown("""
     section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
         fill: #1B4965 !important;
     }
-    /* slider valor */
     section[data-testid="stSidebar"] [data-testid="stTickBar"] * { color: #BEE9E8 !important; }
 
     [data-testid="stDataFrame"] { border-radius: 8px; overflow: hidden; }
@@ -110,14 +105,14 @@ def cargar_datos():
     )
     df.columns = df.columns.str.strip()
 
-    # ---------- Columna G (índice 6) = Cuatrimestre ----------
+    # Columna G (índice 6) = Cuatrimestre
     if df.shape[1] > 6:
         nombre_col_g = df.columns[6]
         df.rename(columns={nombre_col_g: 'Cuatrimestre'}, inplace=True)
     else:
         df['Cuatrimestre'] = ''
 
-    # ---------- Columna L (índice 11) = link SAP Ariba ----------
+    # Columna L (índice 11) = link SAP Ariba
     if df.shape[1] > 11:
         nombre_col_l = df.columns[11]
         df.rename(columns={nombre_col_l: 'Link_Ariba'}, inplace=True)
@@ -128,13 +123,10 @@ def cargar_datos():
         df['Link_Ariba'].astype(str).str.strip()
         .replace({'nan': '', 'None': '', 'NaT': ''})
     )
-
-    # Normalizamos cuatrimestre a string limpio
     df['Cuatrimestre'] = (
         df['Cuatrimestre'].astype(str).str.strip()
         .replace({'nan': '', 'None': '', 'NaT': ''})
     )
-
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
 
     df['% completado'] = (
@@ -184,14 +176,11 @@ colores_etapas = {
 }
 
 # ============================================================
-# 3. INSTANCIA POR OBRA
-# ----------------- LÓGICA CORREGIDA -----------------
-# - Tomamos la ÚLTIMA etapa con progreso (no la primera)
-#   → evita errores cuando etapas previas tienen 98% por redondeo
-# - Tolerancia 0,01 (99%+ se considera completa)
+# 3. INSTANCIA POR OBRA — LÓGICA CORREGIDA
+#  → PRIMERA etapa con pct < 100% (estricto)
+#  → 98% NO se considera completo (sin tolerancia de negocio)
 # ============================================================
-TOL = 1e-6           # umbral mínimo para considerar "iniciado"
-TOL_DONE = 0.01      # 1% de tolerancia: >= 99% se trata como 100%
+TOL = 1e-6  # solo para tolerancia de punto flotante (1.0 vs 0.9999999)
 
 resultados = []
 
@@ -206,7 +195,7 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     cuatri = str(fila.get('Cuatrimestre', '')).strip()
     link_ariba = str(fila.get('Link_Ariba', '')).strip()
 
-    # Si la fila principal no tiene cuatrimestre, lo tomamos de cualquier sub-tarea
+    # Cuatrimestre desde sub-tareas si principal está vacío
     if not cuatri:
         c_sub = grupo['Cuatrimestre'].astype(str).str.strip()
         c_sub = c_sub[c_sub != '']
@@ -230,45 +219,42 @@ for obra_id, grupo in df.groupby('Obra_ID'):
         if not m.empty:
             etapas_pct.append((etapa, float(m['% completado'].iloc[0])))
 
-    # ---------- Métricas individuales por sub-tarea ----------
+    # ---------- Métricas individuales ----------
     pct_ejecucion = next((p for e, p in etapas_pct if e == 'Ejecución'), 0)
     pct_cao       = next((p for e, p in etapas_pct if e == 'CAO presentado'), 0)
-    ejecucion_full = pct_ejecucion >= 1.0 - TOL_DONE
-    cao_full       = pct_cao       >= 1.0 - TOL_DONE
+    ejecucion_full = pct_ejecucion >= 1.0 - TOL
+    cao_full       = pct_cao       >= 1.0 - TOL
 
     # ---------- Determinar instancia ----------
     instancia = "SIN INICIAR"
     if etapas_pct:
-        # Buscamos la ÚLTIMA etapa "en curso" (0 < pct < 99%)
-        en_curso_list = [
-            (e, p) for e, p in etapas_pct
-            if p > TOL and p < 1.0 - TOL_DONE
-        ]
-        if en_curso_list:
-            # Tomamos la MÁS AVANZADA (la última en el orden del flujo)
-            instancia = mapa_upper[en_curso_list[-1][0]]
-        elif cao_full:
+        if cao_full:
+            # CAO presentado completo → obra Finalizada
             instancia = "FINALIZADAS"
         elif all(p <= TOL for _, p in etapas_pct):
+            # Ninguna etapa iniciada
             instancia = "SIN INICIAR"
         else:
-            # Etapas completas hasta cierto punto, siguiente pendiente
-            pend = next((e for e, p in etapas_pct if p <= TOL), None)
-            if pend:
-                instancia = mapa_upper[pend]
+            # PRIMERA etapa con pct < 100% (en el orden del flujo)
+            primera_incompleta = next(
+                (e for e, p in etapas_pct if p < 1.0 - TOL),
+                None
+            )
+            if primera_incompleta:
+                instancia = mapa_upper[primera_incompleta]
             else:
                 instancia = "FINALIZADAS"
 
-    # ---------- Estado ----------
+    # ---------- Estado operativo ----------
     hoy = pd.Timestamp(datetime.now().date())
     if instancia == "FINALIZADAS":
         estado = "Completada"
-    elif pd.notna(fin) and fin < hoy and avance < 1.0 - TOL_DONE:
+    elif pd.notna(fin) and fin < hoy and avance < 1.0 - TOL:
         estado = "Crítica"
     else:
         estado = "En Curso"
 
-    # ---------- Cuatrimestre (formateo) ----------
+    # ---------- Cuatrimestre ----------
     if cuatri in ('1', '2', '3'):
         cuatri_fmt = f"C{cuatri}"
     elif cuatri:
@@ -298,18 +284,13 @@ df_inst = pd.DataFrame(resultados)
 # ============================================================
 st.sidebar.markdown("### FILTROS")
 
-# ---------- AEROPUERTO ----------
 aeros = sorted([a for a in df_inst['AERO'].dropna().unique() if str(a).strip()])
-opciones_aero = ["Todos"] + aeros
-sel_aero = st.sidebar.selectbox("Aeropuerto", opciones_aero, index=0)
+sel_aero = st.sidebar.selectbox("Aeropuerto", ["Todos"] + aeros, index=0)
 
-# ---------- INSTANCIA ----------
 instancias_disp = etapas_upper + ['FINALIZADAS', 'SIN INICIAR']
 instancias_existentes = [i for i in instancias_disp if i in df_inst['INSTANCIA'].unique()]
-opciones_inst = ["Todas"] + instancias_existentes
-sel_inst = st.sidebar.selectbox("Instancia", opciones_inst, index=0)
+sel_inst = st.sidebar.selectbox("Instancia", ["Todas"] + instancias_existentes, index=0)
 
-# ---------- CUATRIMESTRE ----------
 def sort_key_cuatri(c):
     if c == "Sin dato":
         return 99
@@ -318,15 +299,12 @@ def sort_key_cuatri(c):
     return 50
 
 cuatris = sorted(df_inst['CUATRIMESTRE'].unique(), key=sort_key_cuatri)
-opciones_cuatri = ["Todos"] + list(cuatris)
-sel_cuatri = st.sidebar.selectbox("Cuatrimestre", opciones_cuatri, index=0)
+sel_cuatri = st.sidebar.selectbox("Cuatrimestre", ["Todos"] + list(cuatris), index=0)
 
-# ---------- META ----------
 st.sidebar.markdown("---")
 META_FINALIZADAS = st.sidebar.slider("Meta % finalizadas", 0, 100, 85)
 META_EJECUTADAS  = st.sidebar.slider("Meta % ejecutadas", 0, 100, 80)
 
-# ---------- APLICAMOS FILTROS ----------
 df_f = df_inst.copy()
 if sel_aero   != "Todos": df_f = df_f[df_f['AERO'] == sel_aero]
 if sel_inst   != "Todas": df_f = df_f[df_f['INSTANCIA'] == sel_inst]
@@ -423,9 +401,7 @@ with g2:
 with g3:
     st.markdown('<div class="panel-title">Obras por Instancia</div>', unsafe_allow_html=True)
 
-    # Conteo por etapa
     conteo_dict = df_f['INSTANCIA'].value_counts().to_dict()
-    # Forzamos que "FINALIZADAS" sea CAO presentado al 100%
     conteo_dict['FINALIZADAS'] = int(df_f['_CAO_FULL'].sum())
 
     etapas_para_grafico = etapas_upper + ['FINALIZADAS']
