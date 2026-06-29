@@ -117,106 +117,9 @@ st.markdown(f"""
     .panel-title {{
         font-size: 13px; font-weight: 700; color: {COLOR_TEAL_D}; letter-spacing: 1.2px;
         text-transform: uppercase; border-bottom: 2px solid {COLOR_GREEN};
-        padding-bottom: 5px; margin-bottom: 8px; margin-top: 10px;
+        padding-bottom: 5px; margin-bottom: 8px; margin-top: 14px;
         display: inline-block;
     }}
-
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 4px; background: transparent;
-        border-bottom: 2px solid {COLOR_TEAL_L};
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        height: 40px; padding: 0 22px;
-        background-color: {COLOR_GRAY_L};
-        border-radius: 8px 8px 0 0;
-        color: {COLOR_TEAL_D} !important;
-        font-weight: 600; font-size: 13px;
-        letter-spacing: 1px; text-transform: uppercase;
-    }}
-    .stTabs [aria-selected="true"] {{
-        background-color: {COLOR_TEAL} !important;
-        color: white !important;
-    }}
-
-    .aero-card {{
-        background: white; border-radius: 12px;
-        padding: 14px 16px;
-        box-shadow: 0 2px 8px rgba(30,105,117,0.12);
-        border-top: 4px solid {COLOR_TEAL};
-        margin-bottom: 12px; min-height: 250px;
-    }}
-    .aero-card.critical {{ border-top-color: {COLOR_ALERT}; }}
-    .aero-card.warning  {{ border-top-color: {COLOR_WARN}; }}
-    .aero-card.success  {{ border-top-color: {COLOR_GREEN}; }}
-
-    .aero-header {{
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 8px;
-    }}
-    .aero-code {{
-        font-size: 26px; font-weight: 800;
-        color: {COLOR_TEAL_D}; letter-spacing: 2px;
-    }}
-    .aero-badge {{
-        background: {COLOR_GRAY_BG}; color: {COLOR_TEAL_D};
-        padding: 4px 10px; border-radius: 12px;
-        font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
-    }}
-    .aero-badge.critical {{ background: #FCE3D8; color: #B84C2E; }}
-    .aero-badge.warning  {{ background: #FCEFD0; color: #B88820; }}
-    .aero-badge.success  {{ background: #E5F2C9; color: {COLOR_GREEN_D}; }}
-
-    .aero-progress-bar {{
-        background: {COLOR_GRAY_BG};
-        border-radius: 8px; height: 10px;
-        margin: 8px 0; overflow: hidden;
-    }}
-    .aero-progress-fill {{
-        background: linear-gradient(90deg, {COLOR_TEAL}, {COLOR_GREEN});
-        height: 100%; border-radius: 8px;
-    }}
-    .aero-progress-label {{
-        font-size: 11px; color: {COLOR_GRAY};
-        display: flex; justify-content: space-between;
-    }}
-    .aero-progress-label b {{ color: {COLOR_TEAL_D}; }}
-
-    .aero-stats {{
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 6px; margin: 10px 0 8px 0;
-    }}
-    .aero-stat {{
-        background: {COLOR_GRAY_BG};
-        border-radius: 6px; padding: 6px 4px;
-        text-align: center;
-    }}
-    .aero-stat-val {{ font-size: 18px; font-weight: 700; color: {COLOR_TEAL_D}; line-height: 1.1; }}
-    .aero-stat-val.alert {{ color: {COLOR_ALERT}; }}
-    .aero-stat-val.warn  {{ color: #B88820; }}
-    .aero-stat-val.ok    {{ color: {COLOR_GREEN_D}; }}
-    .aero-stat-lbl {{ font-size: 9px; color: {COLOR_GRAY}; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }}
-
-    .aero-instance {{
-        display: flex; align-items: center;
-        font-size: 11px; margin: 3px 0; color: {COLOR_TEAL_D};
-    }}
-    .aero-instance-bar {{
-        flex: 1; height: 8px; border-radius: 4px;
-        margin: 0 8px; background: {COLOR_GRAY_BG}; overflow: hidden;
-    }}
-    .aero-instance-fill {{ height: 100%; border-radius: 4px; }}
-    .aero-instance-lbl {{ width: 100px; font-weight: 600; font-size: 11px; }}
-    .aero-instance-count {{ width: 26px; text-align: right; font-weight: 700; font-size: 12px; }}
-
-    .aero-alert {{
-        margin-top: 6px; padding: 6px 10px;
-        border-radius: 6px; font-size: 11px;
-        background: #FCE3D8; color: #B84C2E;
-        font-weight: 600; border-left: 3px solid {COLOR_ALERT};
-    }}
-    .aero-alert.warn {{ background: #FCEFD0; color: #B88820; border-left-color: {COLOR_WARN}; }}
-    .aero-alert.ok   {{ background: #E5F2C9; color: {COLOR_GREEN_D}; border-left-color: {COLOR_GREEN}; }}
 
     section[data-testid="stSidebar"] {{
         background: linear-gradient(180deg, {COLOR_TEAL_D} 0%, {COLOR_TEAL} 100%);
@@ -283,14 +186,12 @@ def cargar_datos():
     )
     df.columns = df.columns.str.strip()
 
-    # Columna G (índice 6) = Cuatrimestre
     if df.shape[1] > 6:
         col_g = df.columns[6]
         df.rename(columns={col_g: 'Cuatrimestre'}, inplace=True)
     else:
         df['Cuatrimestre'] = ''
 
-    # Columna L (índice 11) = link SAP Ariba
     if df.shape[1] > 11:
         col_l = df.columns[11]
         df.rename(columns={col_l: 'Link_Ariba'}, inplace=True)
@@ -547,299 +448,168 @@ with col_dl:
         st.caption(f"⚠ Excel no disponible ({e}).")
 
 # ============================================================
-# 6. TABS
+# 6. KPIs
 # ============================================================
-tab_resumen, tab_aeros, tab_listado = st.tabs([
-    "📊 Resumen General", "🛬 Por Aeropuerto", "📋 Listado Detallado"
-])
+total = len(df_f)
+activas = int((df_f['ESTADO'] == 'En Curso').sum())
+atrasadas = int((df_f['ESTADO'] == 'Crítica').sum())
+por_vencer = int((df_f['ESTADO'] == 'Por vencer').sum())
+finalizadas = int(df_f['_CAO_FULL'].sum())
+ejecutadas  = int(df_f['_EJECUCION_FULL'].sum())
+pct_finalizadas = (finalizadas / total * 100) if total else 0
+pct_ejecutadas  = (ejecutadas  / total * 100) if total else 0
 
-# ----------- TAB 1: RESUMEN -----------
-with tab_resumen:
-    total = len(df_f)
-    activas = int((df_f['ESTADO'] == 'En Curso').sum())
-    atrasadas = int((df_f['ESTADO'] == 'Crítica').sum())
-    por_vencer = int((df_f['ESTADO'] == 'Por vencer').sum())
-    finalizadas = int(df_f['_CAO_FULL'].sum())
-    ejecutadas  = int(df_f['_EJECUCION_FULL'].sum())
-    pct_finalizadas = (finalizadas / total * 100) if total else 0
-    pct_ejecutadas  = (ejecutadas  / total * 100) if total else 0
+if total > 0 and not df_f.empty:
+    agg_aero = df_f.groupby('AERO').agg(
+        total=('ID', 'count'),
+        finalizadas=('_CAO_FULL', 'sum'),
+    ).reset_index()
+    agg_aero['pct'] = agg_aero['finalizadas'] / agg_aero['total'] * 100
+    agg_aero = agg_aero.sort_values(['pct', 'total'], ascending=[False, False])
+    aero_top = agg_aero.iloc[0]
+    aero_top_nombre = aero_top['AERO']
+    aero_top_pct = aero_top['pct']
+else:
+    aero_top_nombre = "—"
+    aero_top_pct = 0
 
-    if total > 0 and not df_f.empty:
-        agg_aero = df_f.groupby('AERO').agg(
-            total=('ID', 'count'),
-            finalizadas=('_CAO_FULL', 'sum'),
-        ).reset_index()
-        agg_aero['pct'] = agg_aero['finalizadas'] / agg_aero['total'] * 100
-        agg_aero = agg_aero.sort_values(['pct', 'total'], ascending=[False, False])
-        aero_top = agg_aero.iloc[0]
-        aero_top_nombre = aero_top['AERO']
-        aero_top_pct = aero_top['pct']
-    else:
-        aero_top_nombre = "—"
-        aero_top_pct = 0
+k1, k2, k3, k4, k5, k6 = st.columns(6)
+with k1:
+    st.markdown(f"""<div class="kpi-card">
+    <div class="kpi-title">Total OMEs</div>
+    <div class="kpi-value">{total}</div></div>""", unsafe_allow_html=True)
+with k2:
+    st.markdown(f"""<div class="kpi-card">
+    <div class="kpi-title">En Curso</div>
+    <div class="kpi-value">{activas}</div></div>""", unsafe_allow_html=True)
+with k3:
+    st.markdown(f"""<div class="kpi-card ok">
+    <div class="kpi-title">Ejecutadas</div>
+    <div class="kpi-value ok">{ejecutadas}</div></div>""", unsafe_allow_html=True)
+with k4:
+    st.markdown(f"""<div class="kpi-card ok">
+    <div class="kpi-title">Finalizadas</div>
+    <div class="kpi-value ok">{finalizadas}</div></div>""", unsafe_allow_html=True)
+with k5:
+    st.markdown(f"""<div class="kpi-card warn">
+    <div class="kpi-title">Por vencer ≤30d</div>
+    <div class="kpi-value warn">{por_vencer}</div></div>""", unsafe_allow_html=True)
+with k6:
+    st.markdown(f"""<div class="kpi-card alert">
+    <div class="kpi-title">Críticas</div>
+    <div class="kpi-value alert">{atrasadas}</div></div>""", unsafe_allow_html=True)
 
-    k1, k2, k3, k4, k5, k6 = st.columns(6)
-    with k1:
-        st.markdown(f"""<div class="kpi-card">
-        <div class="kpi-title">Total OMEs</div>
-        <div class="kpi-value">{total}</div></div>""", unsafe_allow_html=True)
-    with k2:
-        st.markdown(f"""<div class="kpi-card">
-        <div class="kpi-title">En Curso</div>
-        <div class="kpi-value">{activas}</div></div>""", unsafe_allow_html=True)
-    with k3:
-        st.markdown(f"""<div class="kpi-card ok">
-        <div class="kpi-title">Ejecutadas</div>
-        <div class="kpi-value ok">{ejecutadas}</div></div>""", unsafe_allow_html=True)
-    with k4:
-        st.markdown(f"""<div class="kpi-card ok">
-        <div class="kpi-title">Finalizadas</div>
-        <div class="kpi-value ok">{finalizadas}</div></div>""", unsafe_allow_html=True)
-    with k5:
-        st.markdown(f"""<div class="kpi-card warn">
-        <div class="kpi-title">Por vencer ≤30d</div>
-        <div class="kpi-value warn">{por_vencer}</div></div>""", unsafe_allow_html=True)
-    with k6:
-        st.markdown(f"""<div class="kpi-card alert">
-        <div class="kpi-title">Críticas</div>
-        <div class="kpi-value alert">{atrasadas}</div></div>""", unsafe_allow_html=True)
+st.write("")
+ka1, _ = st.columns([1, 5])
+with ka1:
+    st.markdown(f"""<div class="kpi-card gold">
+    <div class="kpi-title">🏆 Aeropuerto Top</div>
+    <div class="kpi-value gold">{aero_top_nombre}</div>
+    <div class="kpi-sub">{aero_top_pct:.0f}% finalizadas</div>
+    </div>""", unsafe_allow_html=True)
 
-    st.write("")
-    ka1, _ = st.columns([1, 5])
-    with ka1:
-        st.markdown(f"""<div class="kpi-card gold">
-        <div class="kpi-title">🏆 Aeropuerto Top</div>
-        <div class="kpi-value gold">{aero_top_nombre}</div>
-        <div class="kpi-sub">{aero_top_pct:.0f}% finalizadas</div>
-        </div>""", unsafe_allow_html=True)
+st.write("")
 
-    st.write("")
+# ============================================================
+# 7. GRÁFICOS
+# ============================================================
+g1, g2, g3 = st.columns([1, 1, 2.5])
 
-    g1, g2, g3 = st.columns([1, 1, 2.5])
-
-    def donut(pct, label, meta, color):
-        fig = go.Figure(go.Pie(
-            values=[pct, max(0, 100 - pct)],
-            hole=0.78,
-            marker=dict(colors=[color, COLOR_GRAY_BG], line=dict(color='white', width=2)),
-            textinfo='none', sort=False,
-        ))
-        fig.update_layout(
-            showlegend=False, margin=dict(l=0, r=0, t=0, b=0),
-            height=220, paper_bgcolor='white',
-            annotations=[
-                dict(text=f"<b style='font-size:28px;color:{COLOR_TEAL_D}'>{pct:.0f}%</b>"
-                          f"<br><span style='font-size:11px;color:{COLOR_GRAY};letter-spacing:1.5px'>{label}</span>"
-                          f"<br><span style='font-size:11px;color:{COLOR_GREEN_D}'>Meta {meta}%</span>",
-                     x=0.5, y=0.5, showarrow=False),
-            ],
-        )
-        return fig
-
-    with g1:
-        st.markdown('<div class="panel-title">Finalizadas (CAO 100%)</div>', unsafe_allow_html=True)
-        st.plotly_chart(donut(pct_finalizadas, 'FINALIZADAS', META_FINALIZADAS, COLOR_TEAL),
-                        use_container_width=True, config={'displayModeBar': False})
-    with g2:
-        st.markdown('<div class="panel-title">Ejecutadas (Ejecución 100%)</div>', unsafe_allow_html=True)
-        st.plotly_chart(donut(pct_ejecutadas, 'EJECUTADAS', META_EJECUTADAS, COLOR_GREEN),
-                        use_container_width=True, config={'displayModeBar': False})
-    with g3:
-        st.markdown('<div class="panel-title">Obras por Instancia</div>', unsafe_allow_html=True)
-        conteo_dict = df_f['INSTANCIA'].value_counts().to_dict()
-        conteo_dict['FINALIZADAS'] = int(df_f['_CAO_FULL'].sum())
-        etapas_para_grafico = etapas_upper + ['FINALIZADAS']
-        conteo = pd.DataFrame({
-            'Etapa': etapas_para_grafico,
-            'Cantidad': [conteo_dict.get(e, 0) for e in etapas_para_grafico]
-        })
-        fig_bar = px.bar(
-            conteo, x='Etapa', y='Cantidad', text='Cantidad',
-            color='Etapa', color_discrete_map=colores_etapas,
-        )
-        fig_bar.update_traces(
-            textposition='outside',
-            textfont=dict(size=13, color=COLOR_TEAL_D, family='Segoe UI'),
-            marker_line_width=0,
-        )
-        fig_bar.update_layout(
-            showlegend=False, margin=dict(l=10, r=10, t=10, b=10),
-            height=220, plot_bgcolor='white', paper_bgcolor='white',
-            yaxis=dict(title=None, gridcolor=COLOR_GRAY_BG, tickfont=dict(color=COLOR_GRAY, size=12)),
-            xaxis=dict(title=None, tickfont=dict(color=COLOR_TEAL_D, size=12), tickangle=-15),
-        )
-        st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
-
-# ----------- TAB 2: POR AEROPUERTO -----------
-with tab_aeros:
-    if df_f.empty:
-        st.info("No hay obras que coincidan con los filtros aplicados.")
-    else:
-        cards_data = []
-        for aero_code, grupo_a in df_f.groupby('AERO'):
-            if not aero_code or str(aero_code).strip() == '':
-                continue
-            total_a       = len(grupo_a)
-            en_curso_a    = int((grupo_a['ESTADO'] == 'En Curso').sum())
-            ejecutadas_a  = int(grupo_a['_EJECUCION_FULL'].sum())
-            finalizadas_a = int(grupo_a['_CAO_FULL'].sum())
-            por_vencer_a  = int((grupo_a['ESTADO'] == 'Por vencer').sum())
-            criticas_a    = int((grupo_a['ESTADO'] == 'Crítica').sum())
-            pct_cao_a     = (finalizadas_a / total_a * 100) if total_a else 0
-            dist = grupo_a['INSTANCIA'].value_counts().to_dict()
-
-            if criticas_a > 0:
-                categoria = 'critical'
-                badge_txt = f"⚠ {criticas_a} CRÍTICA(S)"
-                badge_cls = 'critical'
-            elif por_vencer_a > 0:
-                categoria = 'warning'
-                badge_txt = f"⏱ {por_vencer_a} POR VENCER"
-                badge_cls = 'warning'
-            elif pct_cao_a >= META_FINALIZADAS:
-                categoria = 'success'
-                badge_txt = "✓ EN META"
-                badge_cls = 'success'
-            else:
-                categoria = ''
-                badge_txt = "EN PROGRESO"
-                badge_cls = ''
-
-            cards_data.append({
-                'aero': aero_code,
-                'total': total_a,
-                'en_curso': en_curso_a,
-                'ejecutadas': ejecutadas_a,
-                'finalizadas': finalizadas_a,
-                'por_vencer': por_vencer_a,
-                'criticas': criticas_a,
-                'pct_cao': pct_cao_a,
-                'dist': dist,
-                'categoria': categoria,
-                'badge_txt': badge_txt,
-                'badge_cls': badge_cls,
-            })
-
-        cards_data.sort(key=lambda x: (-x['criticas'], -x['por_vencer'], x['pct_cao']))
-
-        st.caption(f"📊 Mostrando **{len(cards_data)} aeropuerto(s)**. Ordenados por urgencia.")
-        st.write("")
-
-        N_COLS = 3
-        for i in range(0, len(cards_data), N_COLS):
-            cols = st.columns(N_COLS)
-            chunk = cards_data[i:i + N_COLS]
-            for j, card in enumerate(chunk):
-                col_actual = cols[j]
-                with col_actual:
-                    instancias_html = ""
-                    for etapa in etapas_upper + ['FINALIZADAS', 'SIN INICIAR']:
-                        n = card['dist'].get(etapa, 0)
-                        if n == 0:
-                            continue
-                        ancho = (n / card['total']) * 100
-                        color = colores_etapas.get(etapa, COLOR_TEAL)
-                        instancias_html += f"""
-                        <div class="aero-instance">
-                            <div class="aero-instance-lbl">{etapa}</div>
-                            <div class="aero-instance-bar">
-                                <div class="aero-instance-fill" style="width:{ancho}%; background:{color};"></div>
-                            </div>
-                            <div class="aero-instance-count">{n}</div>
-                        </div>
-                        """
-
-                    if card['criticas'] > 0:
-                        alerta_html = f'<div class="aero-alert">🚨 {card["criticas"]} obra(s) con vencimiento pasado</div>'
-                    elif card['por_vencer'] > 0:
-                        alerta_html = f'<div class="aero-alert warn">⏱ {card["por_vencer"]} obra(s) vencen en ≤30 días</div>'
-                    elif card['pct_cao'] >= META_FINALIZADAS:
-                        alerta_html = '<div class="aero-alert ok">✅ Meta de finalización alcanzada</div>'
-                    else:
-                        alerta_html = ''
-
-                    card_html = f"""
-                    <div class="aero-card {card['categoria']}">
-                        <div class="aero-header">
-                            <div class="aero-code">{card['aero']}</div>
-                            <div class="aero-badge {card['badge_cls']}">{card['badge_txt']}</div>
-                        </div>
-                        <div class="aero-progress-label">
-                            <span>Cumplimiento (CAO)</span>
-                            <b>{card['pct_cao']:.0f}%</b>
-                        </div>
-                        <div class="aero-progress-bar">
-                            <div class="aero-progress-fill" style="width:{card['pct_cao']}%;"></div>
-                        </div>
-                        <div class="aero-stats">
-                            <div class="aero-stat">
-                                <div class="aero-stat-val">{card['total']}</div>
-                                <div class="aero-stat-lbl">Total</div>
-                            </div>
-                            <div class="aero-stat">
-                                <div class="aero-stat-val">{card['en_curso']}</div>
-                                <div class="aero-stat-lbl">Curso</div>
-                            </div>
-                            <div class="aero-stat">
-                                <div class="aero-stat-val ok">{card['ejecutadas']}</div>
-                                <div class="aero-stat-lbl">Ejec.</div>
-                            </div>
-                            <div class="aero-stat">
-                                <div class="aero-stat-val ok">{card['finalizadas']}</div>
-                                <div class="aero-stat-lbl">Final.</div>
-                            </div>
-                            <div class="aero-stat">
-                                <div class="aero-stat-val alert">{card['criticas']}</div>
-                                <div class="aero-stat-lbl">Crít.</div>
-                            </div>
-                        </div>
-                        {instancias_html}
-                        {alerta_html}
-                    </div>
-                    """
-                    st.markdown(card_html, unsafe_allow_html=True)
-
-# ----------- TAB 3: LISTADO -----------
-with tab_listado:
-    st.markdown('<div class="panel-title">Listado Detallado de OMEs</div>', unsafe_allow_html=True)
-
-    def fmt_estado(s):
-        if s == "Completada": return "● Completada"
-        if s == "En Curso":   return "● En Curso"
-        if s == "Por vencer": return "● Por vencer"
-        if s == "Crítica":    return "● Crítica"
-        return s
-
-    df_show = df_f.copy()
-    df_show['ESTADO'] = df_show['ESTADO'].map(fmt_estado)
-    df_show['INICIO'] = df_show['INICIO'].dt.strftime('%d/%m/%y').fillna('—')
-    df_show['VENC.']  = df_show['VENC.'].dt.strftime('%d/%m/%y').fillna('—')
-    df_show['DÍAS REST.'] = df_show['DÍAS REST.'].apply(
-        lambda d: f"{int(d)}" if pd.notna(d) else "—"
+def donut(pct, label, meta, color):
+    fig = go.Figure(go.Pie(
+        values=[pct, max(0, 100 - pct)],
+        hole=0.78,
+        marker=dict(colors=[color, COLOR_GRAY_BG], line=dict(color='white', width=2)),
+        textinfo='none', sort=False,
+    ))
+    fig.update_layout(
+        showlegend=False, margin=dict(l=0, r=0, t=0, b=0),
+        height=220, paper_bgcolor='white',
+        annotations=[
+            dict(text=f"<b style='font-size:28px;color:{COLOR_TEAL_D}'>{pct:.0f}%</b>"
+                      f"<br><span style='font-size:11px;color:{COLOR_GRAY};letter-spacing:1.5px'>{label}</span>"
+                      f"<br><span style='font-size:11px;color:{COLOR_GREEN_D}'>Meta {meta}%</span>",
+                 x=0.5, y=0.5, showarrow=False),
+        ],
     )
-    cols_order = ['ID', 'OBRA', 'AERO', 'INSTANCIA', 'CUATRIMESTRE',
-                  '% AVANCE', 'ESTADO', 'INICIO', 'VENC.', 'DÍAS REST.', 'SAP ARIBA']
-    df_show = df_show[cols_order]
+    return fig
 
-    st.dataframe(
-        df_show, use_container_width=True, hide_index=True, height=420,
-        column_config={
-            "% AVANCE": st.column_config.ProgressColumn("% AVANCE", format="%d%%", min_value=0, max_value=100),
-            "ID": st.column_config.TextColumn(width="small"),
-            "OBRA": st.column_config.TextColumn(width="large"),
-            "AERO": st.column_config.TextColumn(width="small"),
-            "INSTANCIA": st.column_config.TextColumn(width="medium"),
-            "CUATRIMESTRE": st.column_config.TextColumn(width="small"),
-            "ESTADO": st.column_config.TextColumn(width="small"),
-            "INICIO": st.column_config.TextColumn(width="small"),
-            "VENC.": st.column_config.TextColumn(width="small"),
-            "DÍAS REST.": st.column_config.TextColumn("DÍAS REST.", width="small"),
-            "SAP ARIBA": st.column_config.LinkColumn(
-                "SAP ARIBA", help="Abrir la obra en SAP Ariba",
-                display_text="Abrir ›", width="small",
-            ),
-        },
+with g1:
+    st.markdown('<div class="panel-title">Finalizadas (CAO 100%)</div>', unsafe_allow_html=True)
+    st.plotly_chart(donut(pct_finalizadas, 'FINALIZADAS', META_FINALIZADAS, COLOR_TEAL),
+                    use_container_width=True, config={'displayModeBar': False})
+with g2:
+    st.markdown('<div class="panel-title">Ejecutadas (Ejecución 100%)</div>', unsafe_allow_html=True)
+    st.plotly_chart(donut(pct_ejecutadas, 'EJECUTADAS', META_EJECUTADAS, COLOR_GREEN),
+                    use_container_width=True, config={'displayModeBar': False})
+with g3:
+    st.markdown('<div class="panel-title">Obras por Instancia</div>', unsafe_allow_html=True)
+    conteo_dict = df_f['INSTANCIA'].value_counts().to_dict()
+    conteo_dict['FINALIZADAS'] = int(df_f['_CAO_FULL'].sum())
+    etapas_para_grafico = etapas_upper + ['FINALIZADAS']
+    conteo = pd.DataFrame({
+        'Etapa': etapas_para_grafico,
+        'Cantidad': [conteo_dict.get(e, 0) for e in etapas_para_grafico]
+    })
+    fig_bar = px.bar(
+        conteo, x='Etapa', y='Cantidad', text='Cantidad',
+        color='Etapa', color_discrete_map=colores_etapas,
     )
+    fig_bar.update_traces(
+        textposition='outside',
+        textfont=dict(size=13, color=COLOR_TEAL_D, family='Segoe UI'),
+        marker_line_width=0,
+    )
+    fig_bar.update_layout(
+        showlegend=False, margin=dict(l=10, r=10, t=10, b=10),
+        height=220, plot_bgcolor='white', paper_bgcolor='white',
+        yaxis=dict(title=None, gridcolor=COLOR_GRAY_BG, tickfont=dict(color=COLOR_GRAY, size=12)),
+        xaxis=dict(title=None, tickfont=dict(color=COLOR_TEAL_D, size=12), tickangle=-15),
+    )
+    st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
+
+# ============================================================
+# 8. LISTADO DETALLADO
+# ============================================================
+st.markdown('<div class="panel-title">Listado Detallado de OMEs</div>', unsafe_allow_html=True)
+
+def fmt_estado(s):
+    if s == "Completada": return "● Completada"
+    if s == "En Curso":   return "● En Curso"
+    if s == "Por vencer": return "● Por vencer"
+    if s == "Crítica":    return "● Crítica"
+    return s
+
+df_show = df_f.copy()
+df_show['ESTADO'] = df_show['ESTADO'].map(fmt_estado)
+df_show['INICIO'] = df_show['INICIO'].dt.strftime('%d/%m/%y').fillna('—')
+df_show['VENC.']  = df_show['VENC.'].dt.strftime('%d/%m/%y').fillna('—')
+df_show['DÍAS REST.'] = df_show['DÍAS REST.'].apply(
+    lambda d: f"{int(d)}" if pd.notna(d) else "—"
+)
+cols_order = ['ID', 'OBRA', 'AERO', 'INSTANCIA', 'CUATRIMESTRE',
+              '% AVANCE', 'ESTADO', 'INICIO', 'VENC.', 'DÍAS REST.', 'SAP ARIBA']
+df_show = df_show[cols_order]
+
+st.dataframe(
+    df_show, use_container_width=True, hide_index=True, height=380,
+    column_config={
+        "% AVANCE": st.column_config.ProgressColumn("% AVANCE", format="%d%%", min_value=0, max_value=100),
+        "ID": st.column_config.TextColumn(width="small"),
+        "OBRA": st.column_config.TextColumn(width="large"),
+        "AERO": st.column_config.TextColumn(width="small"),
+        "INSTANCIA": st.column_config.TextColumn(width="medium"),
+        "CUATRIMESTRE": st.column_config.TextColumn(width="small"),
+        "ESTADO": st.column_config.TextColumn(width="small"),
+        "INICIO": st.column_config.TextColumn(width="small"),
+        "VENC.": st.column_config.TextColumn(width="small"),
+        "DÍAS REST.": st.column_config.TextColumn("DÍAS REST.", width="small"),
+        "SAP ARIBA": st.column_config.LinkColumn(
+            "SAP ARIBA", help="Abrir la obra en SAP Ariba",
+            display_text="Abrir ›", width="small",
+        ),
+    },
+)
 
 # ============================================================
 # DEBUG
