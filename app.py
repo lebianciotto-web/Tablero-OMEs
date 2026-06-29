@@ -27,31 +27,28 @@ except Exception:
 # ============================================================
 # PALETA CORPORATIVA — AEROPUERTOS ARGENTINA
 # ============================================================
-COLOR_TEAL    = "#2A8C9F"   # Teal corporativo
-COLOR_TEAL_D  = "#1E6975"   # Teal oscuro
-COLOR_TEAL_L  = "#A6D9E0"   # Teal pastel
-COLOR_GREEN   = "#95C93D"   # Verde corporativo
-COLOR_GREEN_D = "#6FA02A"   # Verde oscuro
-COLOR_GREEN_L = "#D5EBA8"   # Verde pastel
-COLOR_GRAY    = "#7C8388"   # Gris corporativo
-COLOR_GRAY_L  = "#D6D9DB"   # Gris claro
-COLOR_GRAY_BG = "#F2F4F5"   # Fondo gris muy claro
-COLOR_ALERT   = "#E07856"   # Coral para críticas
-COLOR_WARN    = "#E8B847"   # Ámbar para alertas medias
+COLOR_TEAL    = "#2A8C9F"
+COLOR_TEAL_D  = "#1E6975"
+COLOR_TEAL_L  = "#A6D9E0"
+COLOR_GREEN   = "#95C93D"
+COLOR_GREEN_D = "#6FA02A"
+COLOR_GREEN_L = "#D5EBA8"
+COLOR_GRAY    = "#7C8388"
+COLOR_GRAY_L  = "#D6D9DB"
+COLOR_GRAY_BG = "#F2F4F5"
+COLOR_ALERT   = "#E07856"
+COLOR_WARN    = "#E8B847"
 COLOR_WHITE   = "#FFFFFF"
 
 # ============================================================
-# ESTILOS — IDENTIDAD AEROPUERTOS ARGENTINA
+# ESTILOS
 # ============================================================
 st.markdown(f"""
 <style>
-    /* ---------- BASE ---------- */
     html, body, [class*="css"] {{
         font-family: 'Segoe UI', 'Inter', sans-serif;
         font-size: 14px;
     }}
-
-    /* Fondo con patrón sutil tipo "checkerboard" corporativo */
     .stApp {{
         background-color: {COLOR_GRAY_BG};
         background-image:
@@ -62,7 +59,6 @@ st.markdown(f"""
         background-size: 80px 80px;
         background-position: 0 0, 40px 0, 40px 40px, 0 40px;
     }}
-
     .block-container {{
         padding-top: 0.8rem !important;
         padding-bottom: 0.5rem !important;
@@ -73,27 +69,23 @@ st.markdown(f"""
     header[data-testid="stHeader"] {{ background: transparent; height: 0; }}
     #MainMenu, footer {{ visibility: hidden; }}
 
-    /* ---------- HEADER ---------- */
     .header-bar {{
         background: linear-gradient(100deg, {COLOR_TEAL_D} 0%, {COLOR_TEAL} 60%, {COLOR_GREEN_D} 100%);
         padding: 14px 26px; border-radius: 12px;
         display: flex; justify-content: space-between; align-items: center;
         box-shadow: 0 4px 12px rgba(30,105,117,0.25);
         margin-bottom: 12px; color: white;
-        position: relative;
-        overflow: hidden;
+        position: relative; overflow: hidden;
     }}
     .header-bar::before {{
-        content: "";
-        position: absolute;
+        content: ""; position: absolute;
         right: -20px; top: -20px;
         width: 160px; height: 160px;
         background: rgba(255,255,255,0.08);
         border-radius: 50%;
     }}
     .header-bar::after {{
-        content: "";
-        position: absolute;
+        content: ""; position: absolute;
         right: 60px; top: 30px;
         width: 80px; height: 80px;
         border: 3px solid rgba(255,255,255,0.15);
@@ -104,7 +96,6 @@ st.markdown(f"""
     .header-right {{ text-align: right; font-size: 13px; color: {COLOR_TEAL_L}; letter-spacing: 0.5px; position: relative; z-index: 1;}}
     .header-right b {{ color: white; font-size: 15px; letter-spacing: 1px; }}
 
-    /* ---------- KPI CARDS ---------- */
     .kpi-card {{
         background: white; padding: 12px 16px; border-radius: 10px;
         box-shadow: 0 2px 6px rgba(30,105,117,0.10);
@@ -123,7 +114,6 @@ st.markdown(f"""
     .kpi-value.gold  {{ color: {COLOR_GREEN_D}; }}
     .kpi-sub {{ font-size: 11px; color: {COLOR_GRAY}; margin-top: 2px; }}
 
-    /* ---------- PANELES ---------- */
     .panel-title {{
         font-size: 13px; font-weight: 700; color: {COLOR_TEAL_D}; letter-spacing: 1.2px;
         text-transform: uppercase; border-bottom: 2px solid {COLOR_GREEN};
@@ -131,37 +121,29 @@ st.markdown(f"""
         display: inline-block;
     }}
 
-    /* ---------- TABS ---------- */
     .stTabs [data-baseweb="tab-list"] {{
-        gap: 4px;
-        background: transparent;
+        gap: 4px; background: transparent;
         border-bottom: 2px solid {COLOR_TEAL_L};
     }}
     .stTabs [data-baseweb="tab"] {{
-        height: 40px;
-        padding: 0 22px;
+        height: 40px; padding: 0 22px;
         background-color: {COLOR_GRAY_L};
         border-radius: 8px 8px 0 0;
         color: {COLOR_TEAL_D} !important;
-        font-weight: 600;
-        font-size: 13px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
+        font-weight: 600; font-size: 13px;
+        letter-spacing: 1px; text-transform: uppercase;
     }}
     .stTabs [aria-selected="true"] {{
         background-color: {COLOR_TEAL} !important;
         color: white !important;
     }}
 
-    /* ---------- AIRPORT CARDS ---------- */
     .aero-card {{
-        background: white;
-        border-radius: 12px;
+        background: white; border-radius: 12px;
         padding: 14px 16px;
         box-shadow: 0 2px 8px rgba(30,105,117,0.12);
         border-top: 4px solid {COLOR_TEAL};
-        margin-bottom: 12px;
-        min-height: 250px;
+        margin-bottom: 12px; min-height: 250px;
     }}
     .aero-card.critical {{ border-top-color: {COLOR_ALERT}; }}
     .aero-card.warning  {{ border-top-color: {COLOR_WARN}; }}
@@ -176,8 +158,7 @@ st.markdown(f"""
         color: {COLOR_TEAL_D}; letter-spacing: 2px;
     }}
     .aero-badge {{
-        background: {COLOR_GRAY_BG};
-        color: {COLOR_TEAL_D};
+        background: {COLOR_GRAY_BG}; color: {COLOR_TEAL_D};
         padding: 4px 10px; border-radius: 12px;
         font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
     }}
@@ -187,15 +168,12 @@ st.markdown(f"""
 
     .aero-progress-bar {{
         background: {COLOR_GRAY_BG};
-        border-radius: 8px;
-        height: 10px;
-        margin: 8px 0;
-        overflow: hidden;
+        border-radius: 8px; height: 10px;
+        margin: 8px 0; overflow: hidden;
     }}
     .aero-progress-fill {{
         background: linear-gradient(90deg, {COLOR_TEAL}, {COLOR_GREEN});
-        height: 100%;
-        border-radius: 8px;
+        height: 100%; border-radius: 8px;
     }}
     .aero-progress-label {{
         font-size: 11px; color: {COLOR_GRAY};
@@ -206,13 +184,11 @@ st.markdown(f"""
     .aero-stats {{
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 6px;
-        margin: 10px 0 8px 0;
+        gap: 6px; margin: 10px 0 8px 0;
     }}
     .aero-stat {{
         background: {COLOR_GRAY_BG};
-        border-radius: 6px;
-        padding: 6px 4px;
+        border-radius: 6px; padding: 6px 4px;
         text-align: center;
     }}
     .aero-stat-val {{ font-size: 18px; font-weight: 700; color: {COLOR_TEAL_D}; line-height: 1.1; }}
@@ -226,31 +202,22 @@ st.markdown(f"""
         font-size: 11px; margin: 3px 0; color: {COLOR_TEAL_D};
     }}
     .aero-instance-bar {{
-        flex: 1;
-        height: 8px;
-        border-radius: 4px;
-        margin: 0 8px;
-        background: {COLOR_GRAY_BG};
-        overflow: hidden;
+        flex: 1; height: 8px; border-radius: 4px;
+        margin: 0 8px; background: {COLOR_GRAY_BG}; overflow: hidden;
     }}
     .aero-instance-fill {{ height: 100%; border-radius: 4px; }}
     .aero-instance-lbl {{ width: 100px; font-weight: 600; font-size: 11px; }}
     .aero-instance-count {{ width: 26px; text-align: right; font-weight: 700; font-size: 12px; }}
 
     .aero-alert {{
-        margin-top: 6px;
-        padding: 6px 10px;
-        border-radius: 6px;
-        font-size: 11px;
-        background: #FCE3D8;
-        color: #B84C2E;
-        font-weight: 600;
-        border-left: 3px solid {COLOR_ALERT};
+        margin-top: 6px; padding: 6px 10px;
+        border-radius: 6px; font-size: 11px;
+        background: #FCE3D8; color: #B84C2E;
+        font-weight: 600; border-left: 3px solid {COLOR_ALERT};
     }}
     .aero-alert.warn {{ background: #FCEFD0; color: #B88820; border-left-color: {COLOR_WARN}; }}
     .aero-alert.ok   {{ background: #E5F2C9; color: {COLOR_GREEN_D}; border-left-color: {COLOR_GREEN}; }}
 
-    /* ---------- SIDEBAR ---------- */
     section[data-testid="stSidebar"] {{
         background: linear-gradient(180deg, {COLOR_TEAL_D} 0%, {COLOR_TEAL} 100%);
     }}
@@ -289,7 +256,6 @@ st.markdown(f"""
         font-size: 14px !important;
     }}
 
-    /* ---------- BOTÓN DESCARGA ---------- */
     div[data-testid="stDownloadButton"] button {{
         background: linear-gradient(90deg, {COLOR_TEAL}, {COLOR_GREEN_D}) !important;
         color: white !important;
@@ -317,20 +283,28 @@ def cargar_datos():
     )
     df.columns = df.columns.str.strip()
 
+    # Columna G (índice 6) = Cuatrimestre
     if df.shape[1] > 6:
-        df.rename(columns={df.columns'Cuatrimestre'}, inplace=True)
+        col_g = df.columns[6]
+        df.rename(columns={col_g: 'Cuatrimestre'}, inplace=True)
     else:
         df['Cuatrimestre'] = ''
 
+    # Columna L (índice 11) = link SAP Ariba
     if df.shape[1] > 11:
-        df.rename(columns={df.columns'Link_Ariba'}, inplace=True)
+        col_l = df.columns[11]
+        df.rename(columns={col_l: 'Link_Ariba'}, inplace=True)
     else:
         df['Link_Ariba'] = ''
 
-    df['Link_Ariba'] = (df['Link_Ariba'].astype(str).str.strip()
-                       .replace({'nan': '', 'None': '', 'NaT': ''}))
-    df['Cuatrimestre'] = (df['Cuatrimestre'].astype(str).str.strip()
-                         .replace({'nan': '', 'None': '', 'NaT': ''}))
+    df['Link_Ariba'] = (
+        df['Link_Ariba'].astype(str).str.strip()
+        .replace({'nan': '', 'None': '', 'NaT': ''})
+    )
+    df['Cuatrimestre'] = (
+        df['Cuatrimestre'].astype(str).str.strip()
+        .replace({'nan': '', 'None': '', 'NaT': ''})
+    )
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
 
     df['% completado'] = (
@@ -369,17 +343,16 @@ orden_etapas = [e[0] for e in etapas_def]
 etapas_upper = [e[1] for e in etapas_def]
 mapa_upper   = dict(zip(orden_etapas, etapas_upper))
 
-# Paleta corporativa aplicada a las etapas (gradiente teal → verde)
 colores_etapas = {
     'PLIEGO':       '#C9E7EC',
     'REV. DOM':     '#A6D9E0',
     'PRESUPUESTO':  '#7CC3CE',
     'DOC. PAPEL':   '#52ADBC',
-    'ORSNA':        COLOR_TEAL,        # #2A8C9F
+    'ORSNA':        COLOR_TEAL,
     'ADJUDIC.':     '#5BAA73',
-    'EJECUCIÓN':    COLOR_GREEN,       # #95C93D
-    'CAO':          COLOR_GREEN_D,     # #6FA02A
-    'FINALIZADAS':  COLOR_TEAL_D,      # #1E6975
+    'EJECUCIÓN':    COLOR_GREEN,
+    'CAO':          COLOR_GREEN_D,
+    'FINALIZADAS':  COLOR_TEAL_D,
     'SIN INICIAR':  COLOR_GRAY_L,
 }
 
@@ -486,13 +459,15 @@ df_inst = pd.DataFrame(resultados)
 df_debug = pd.DataFrame(debug_rows)
 
 # ============================================================
-# 4. SIDEBAR — FILTROS
+# 4. SIDEBAR
 # ============================================================
 st.sidebar.markdown("### FILTROS")
 
 def multi_filter(label, options, key):
-    sel = st.sidebar.multiselect(label, options, default=[],
-                                  placeholder="Todos", key=key)
+    sel = st.sidebar.multiselect(
+        label, options, default=[],
+        placeholder="Todos", key=key,
+    )
     return sel if sel else options
 
 aeros = sorted([a for a in df_inst['AERO'].dropna().unique() if str(a).strip()])
@@ -503,8 +478,10 @@ instancias_existentes = [i for i in instancias_disp if i in df_inst['INSTANCIA']
 sel_inst = multi_filter("Instancia", instancias_existentes, "f_inst")
 
 def sort_key_cuatri(c):
-    if c == "Sin dato": return 99
-    if c.startswith("C") and len(c) >= 2 and c[1].isdigit(): return int(c[1])
+    if c == "Sin dato":
+        return 99
+    if c.startswith("C") and len(c) >= 2 and c[1].isdigit():
+        return int(c[1])
     return 50
 
 cuatris = sorted(df_inst['CUATRIMESTRE'].unique(), key=sort_key_cuatri)
@@ -560,7 +537,8 @@ with col_dl:
             df_export.to_excel(writer, sheet_name='OMEs', index=False)
         excel_data = buffer.getvalue()
         st.download_button(
-            label="📥 Exportar a Excel", data=excel_data,
+            label="📥 Exportar a Excel",
+            data=excel_data,
             file_name=f"OMEs_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
@@ -588,7 +566,8 @@ with tab_resumen:
 
     if total > 0 and not df_f.empty:
         agg_aero = df_f.groupby('AERO').agg(
-            total=('ID', 'count'), finalizadas=('_CAO_FULL', 'sum'),
+            total=('ID', 'count'),
+            finalizadas=('_CAO_FULL', 'sum'),
         ).reset_index()
         agg_aero['pct'] = agg_aero['finalizadas'] / agg_aero['total'] * 100
         agg_aero = agg_aero.sort_values(['pct', 'total'], ascending=[False, False])
@@ -596,15 +575,34 @@ with tab_resumen:
         aero_top_nombre = aero_top['AERO']
         aero_top_pct = aero_top['pct']
     else:
-        aero_top_nombre, aero_top_pct = "—", 0
+        aero_top_nombre = "—"
+        aero_top_pct = 0
 
     k1, k2, k3, k4, k5, k6 = st.columns(6)
-    with k1: st.markdown(f"""<div class="kpi-card"><div class="kpi-title">Total OMEs</div><div class="kpi-value">{total}</div></div>""", unsafe_allow_html=True)
-    with k2: st.markdown(f"""<div class="kpi-card"><div class="kpi-title">En Curso</div><div class="kpi-value">{activas}</div></div>""", unsafe_allow_html=True)
-    with k3: st.markdown(f"""<div class="kpi-card ok"><div class="kpi-title">Ejecutadas</div><div class="kpi-value ok">{ejecutadas}</div></div>""", unsafe_allow_html=True)
-    with k4: st.markdown(f"""<div class="kpi-card ok"><div class="kpi-title">Finalizadas</div><div class="kpi-value ok">{finalizadas}</div></div>""", unsafe_allow_html=True)
-    with k5: st.markdown(f"""<div class="kpi-card warn"><div class="kpi-title">Por vencer ≤30d</div><div class="kpi-value warn">{por_vencer}</div></div>""", unsafe_allow_html=True)
-    with k6: st.markdown(f"""<div class="kpi-card alert"><div class="kpi-title">Críticas</div><div class="kpi-value alert">{atrasadas}</div></div>""", unsafe_allow_html=True)
+    with k1:
+        st.markdown(f"""<div class="kpi-card">
+        <div class="kpi-title">Total OMEs</div>
+        <div class="kpi-value">{total}</div></div>""", unsafe_allow_html=True)
+    with k2:
+        st.markdown(f"""<div class="kpi-card">
+        <div class="kpi-title">En Curso</div>
+        <div class="kpi-value">{activas}</div></div>""", unsafe_allow_html=True)
+    with k3:
+        st.markdown(f"""<div class="kpi-card ok">
+        <div class="kpi-title">Ejecutadas</div>
+        <div class="kpi-value ok">{ejecutadas}</div></div>""", unsafe_allow_html=True)
+    with k4:
+        st.markdown(f"""<div class="kpi-card ok">
+        <div class="kpi-title">Finalizadas</div>
+        <div class="kpi-value ok">{finalizadas}</div></div>""", unsafe_allow_html=True)
+    with k5:
+        st.markdown(f"""<div class="kpi-card warn">
+        <div class="kpi-title">Por vencer ≤30d</div>
+        <div class="kpi-value warn">{por_vencer}</div></div>""", unsafe_allow_html=True)
+    with k6:
+        st.markdown(f"""<div class="kpi-card alert">
+        <div class="kpi-title">Críticas</div>
+        <div class="kpi-value alert">{atrasadas}</div></div>""", unsafe_allow_html=True)
 
     st.write("")
     ka1, _ = st.columns([1, 5])
@@ -621,7 +619,8 @@ with tab_resumen:
 
     def donut(pct, label, meta, color):
         fig = go.Figure(go.Pie(
-            values=[pct, max(0, 100 - pct)], hole=0.78,
+            values=[pct, max(0, 100 - pct)],
+            hole=0.78,
             marker=dict(colors=[color, COLOR_GRAY_BG], line=dict(color='white', width=2)),
             textinfo='none', sort=False,
         ))
@@ -654,8 +653,10 @@ with tab_resumen:
             'Etapa': etapas_para_grafico,
             'Cantidad': [conteo_dict.get(e, 0) for e in etapas_para_grafico]
         })
-        fig_bar = px.bar(conteo, x='Etapa', y='Cantidad', text='Cantidad',
-                         color='Etapa', color_discrete_map=colores_etapas)
+        fig_bar = px.bar(
+            conteo, x='Etapa', y='Cantidad', text='Cantidad',
+            color='Etapa', color_discrete_map=colores_etapas,
+        )
         fig_bar.update_traces(
             textposition='outside',
             textfont=dict(size=13, color=COLOR_TEAL_D, family='Segoe UI'),
@@ -688,20 +689,35 @@ with tab_aeros:
             dist = grupo_a['INSTANCIA'].value_counts().to_dict()
 
             if criticas_a > 0:
-                categoria, badge_txt, badge_cls = 'critical', f"⚠ {criticas_a} CRÍTICA(S)", 'critical'
+                categoria = 'critical'
+                badge_txt = f"⚠ {criticas_a} CRÍTICA(S)"
+                badge_cls = 'critical'
             elif por_vencer_a > 0:
-                categoria, badge_txt, badge_cls = 'warning', f"⏱ {por_vencer_a} POR VENCER", 'warning'
+                categoria = 'warning'
+                badge_txt = f"⏱ {por_vencer_a} POR VENCER"
+                badge_cls = 'warning'
             elif pct_cao_a >= META_FINALIZADAS:
-                categoria, badge_txt, badge_cls = 'success', "✓ EN META", 'success'
+                categoria = 'success'
+                badge_txt = "✓ EN META"
+                badge_cls = 'success'
             else:
-                categoria, badge_txt, badge_cls = '', "EN PROGRESO", ''
+                categoria = ''
+                badge_txt = "EN PROGRESO"
+                badge_cls = ''
 
             cards_data.append({
-                'aero': aero_code, 'total': total_a, 'en_curso': en_curso_a,
-                'ejecutadas': ejecutadas_a, 'finalizadas': finalizadas_a,
-                'por_vencer': por_vencer_a, 'criticas': criticas_a,
-                'pct_cao': pct_cao_a, 'dist': dist,
-                'categoria': categoria, 'badge_txt': badge_txt, 'badge_cls': badge_cls,
+                'aero': aero_code,
+                'total': total_a,
+                'en_curso': en_curso_a,
+                'ejecutadas': ejecutadas_a,
+                'finalizadas': finalizadas_a,
+                'por_vencer': por_vencer_a,
+                'criticas': criticas_a,
+                'pct_cao': pct_cao_a,
+                'dist': dist,
+                'categoria': categoria,
+                'badge_txt': badge_txt,
+                'badge_cls': badge_cls,
             })
 
         cards_data.sort(key=lambda x: (-x['criticas'], -x['por_vencer'], x['pct_cao']))
@@ -712,11 +728,15 @@ with tab_aeros:
         N_COLS = 3
         for i in range(0, len(cards_data), N_COLS):
             cols = st.columns(N_COLS)
-            for j, card in enumerate(cards_data[i:i+N_COLS]):
-                with cols                    instancias_html = ""
+            chunk = cards_data[i:i + N_COLS]
+            for j, card in enumerate(chunk):
+                col_actual = cols[j]
+                with col_actual:
+                    instancias_html = ""
                     for etapa in etapas_upper + ['FINALIZADAS', 'SIN INICIAR']:
                         n = card['dist'].get(etapa, 0)
-                        if n == 0: continue
+                        if n == 0:
+                            continue
                         ancho = (n / card['total']) * 100
                         color = colores_etapas.get(etapa, COLOR_TEAL)
                         instancias_html += f"""
@@ -726,7 +746,8 @@ with tab_aeros:
                                 <div class="aero-instance-fill" style="width:{ancho}%; background:{color};"></div>
                             </div>
                             <div class="aero-instance-count">{n}</div>
-                        </div>"""
+                        </div>
+                        """
 
                     if card['criticas'] > 0:
                         alerta_html = f'<div class="aero-alert">🚨 {card["criticas"]} obra(s) con vencimiento pasado</div>'
@@ -744,21 +765,38 @@ with tab_aeros:
                             <div class="aero-badge {card['badge_cls']}">{card['badge_txt']}</div>
                         </div>
                         <div class="aero-progress-label">
-                            <span>Cumplimiento (CAO)</span><b>{card['pct_cao']:.0f}%</b>
+                            <span>Cumplimiento (CAO)</span>
+                            <b>{card['pct_cao']:.0f}%</b>
                         </div>
                         <div class="aero-progress-bar">
                             <div class="aero-progress-fill" style="width:{card['pct_cao']}%;"></div>
                         </div>
                         <div class="aero-stats">
-                            <div class="aero-stat"><div class="aero-stat-val">{card['total']}</div><div class="aero-stat-lbl">Total</div></div>
-                            <div class="aero-stat"><div class="aero-stat-val">{card['en_curso']}</div><div class="aero-stat-lbl">Curso</div></div>
-                            <div class="aero-stat"><div class="aero-stat-val ok">{card['ejecutadas']}</div><div class="aero-stat-lbl">Ejec.</div></div>
-                            <div class="aero-stat"><div class="aero-stat-val ok">{card['finalizadas']}</div><div class="aero-stat-lbl">Final.</div></div>
-                            <div class="aero-stat"><div class="aero-stat-val alert">{card['criticas']}</div><div class="aero-stat-lbl">Crít.</div></div>
+                            <div class="aero-stat">
+                                <div class="aero-stat-val">{card['total']}</div>
+                                <div class="aero-stat-lbl">Total</div>
+                            </div>
+                            <div class="aero-stat">
+                                <div class="aero-stat-val">{card['en_curso']}</div>
+                                <div class="aero-stat-lbl">Curso</div>
+                            </div>
+                            <div class="aero-stat">
+                                <div class="aero-stat-val ok">{card['ejecutadas']}</div>
+                                <div class="aero-stat-lbl">Ejec.</div>
+                            </div>
+                            <div class="aero-stat">
+                                <div class="aero-stat-val ok">{card['finalizadas']}</div>
+                                <div class="aero-stat-lbl">Final.</div>
+                            </div>
+                            <div class="aero-stat">
+                                <div class="aero-stat-val alert">{card['criticas']}</div>
+                                <div class="aero-stat-lbl">Crít.</div>
+                            </div>
                         </div>
                         {instancias_html}
                         {alerta_html}
-                    </div>"""
+                    </div>
+                    """
                     st.markdown(card_html, unsafe_allow_html=True)
 
 # ----------- TAB 3: LISTADO -----------
