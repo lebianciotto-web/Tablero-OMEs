@@ -32,80 +32,70 @@ st.markdown("""
     header[data-testid="stHeader"] { background: transparent; height: 0; }
     #MainMenu, footer { visibility: hidden; }
 
+    /* ---------- HEADER ---------- */
     .header-bar {
         background: linear-gradient(100deg, #1B4965 0%, #3A7CA5 100%);
-        padding: 10px 22px;
-        border-radius: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        padding: 10px 22px; border-radius: 10px;
+        display: flex; justify-content: space-between; align-items: center;
         box-shadow: 0 2px 8px rgba(27,73,101,0.18);
-        margin-bottom: 10px;
-        color: white;
+        margin-bottom: 10px; color: white;
     }
-    .header-title {
-        font-size: 18px; font-weight: 700;
-        letter-spacing: 1.2px; color: white;
-    }
-    .header-sub {
-        font-size: 11px; color: #BEE9E8;
-        letter-spacing: 0.5px; text-transform: uppercase;
-    }
-    .header-right {
-        text-align: right; font-size: 11px;
-        color: #BEE9E8; letter-spacing: 0.5px;
-    }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: 1.2px; color: white; }
+    .header-sub   { font-size: 11px; color: #BEE9E8; letter-spacing: 0.5px; text-transform: uppercase; }
+    .header-right { text-align: right; font-size: 11px; color: #BEE9E8; letter-spacing: 0.5px; }
     .header-right b { color: white; font-size: 13px; letter-spacing: 1px; }
 
+    /* ---------- KPI CARDS ---------- */
     .kpi-card {
-        background: white;
-        padding: 10px 14px;
-        border-radius: 10px;
+        background: white; padding: 10px 14px; border-radius: 10px;
         box-shadow: 0 1px 4px rgba(27,73,101,0.08);
-        border-left: 4px solid #5FA8D3;
-        height: 70px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        border-left: 4px solid #5FA8D3; height: 70px;
+        display: flex; flex-direction: column; justify-content: center;
     }
     .kpi-card.alert  { border-left-color: #E29578; }
     .kpi-card.ok     { border-left-color: #86C6A4; }
     .kpi-card.warn   { border-left-color: #F1B963; }
-    .kpi-title {
-        font-size: 10px; color: #6B7C93;
-        font-weight: 600; letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-    .kpi-value {
-        font-size: 26px; font-weight: 700;
-        color: #1B4965; line-height: 1.1; margin-top: 2px;
-    }
+    .kpi-title { font-size: 10px; color: #6B7C93; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: #1B4965; line-height: 1.1; margin-top: 2px; }
     .kpi-value.alert { color: #C75D44; }
     .kpi-value.ok    { color: #4F9D75; }
 
+    /* ---------- PANELES ---------- */
     .panel-title {
-        font-size: 11px; font-weight: 700;
-        color: #1B4965; letter-spacing: 1.2px;
-        text-transform: uppercase;
-        border-bottom: 1px solid #EDF2F4;
-        padding-bottom: 4px; margin-bottom: 6px;
-        margin-top: 8px;
+        font-size: 11px; font-weight: 700; color: #1B4965; letter-spacing: 1.2px;
+        text-transform: uppercase; border-bottom: 1px solid #EDF2F4;
+        padding-bottom: 4px; margin-bottom: 6px; margin-top: 8px;
     }
 
+    /* ---------- SIDEBAR ---------- */
     section[data-testid="stSidebar"] { background: #1B4965; }
-    section[data-testid="stSidebar"] * { color: #E8F1F8 !important; }
+    section[data-testid="stSidebar"] h1,
     section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3 {
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] p {
         color: #BEE9E8 !important;
         font-size: 12px !important;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
+        letter-spacing: 1.2px;
     }
+    /* ---------- FIX CONTRASTE DROPDOWNS ---------- */
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background-color: white !important;
+        border: 1px solid #5FA8D3 !important;
+        border-radius: 6px !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] span,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] input {
+        color: #1B4965 !important;
+        font-weight: 600 !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
+        fill: #1B4965 !important;
+    }
+    /* slider valor */
+    section[data-testid="stSidebar"] [data-testid="stTickBar"] * { color: #BEE9E8 !important; }
 
-    [data-testid="stDataFrame"] {
-        border-radius: 8px;
-        overflow: hidden;
-    }
+    [data-testid="stDataFrame"] { border-radius: 8px; overflow: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -120,7 +110,14 @@ def cargar_datos():
     )
     df.columns = df.columns.str.strip()
 
-    # Columna L (índice 11) = link SAP Ariba
+    # ---------- Columna G (índice 6) = Cuatrimestre ----------
+    if df.shape[1] > 6:
+        nombre_col_g = df.columns[6]
+        df.rename(columns={nombre_col_g: 'Cuatrimestre'}, inplace=True)
+    else:
+        df['Cuatrimestre'] = ''
+
+    # ---------- Columna L (índice 11) = link SAP Ariba ----------
     if df.shape[1] > 11:
         nombre_col_l = df.columns[11]
         df.rename(columns={nombre_col_l: 'Link_Ariba'}, inplace=True)
@@ -131,6 +128,13 @@ def cargar_datos():
         df['Link_Ariba'].astype(str).str.strip()
         .replace({'nan': '', 'None': '', 'NaT': ''})
     )
+
+    # Normalizamos cuatrimestre a string limpio
+    df['Cuatrimestre'] = (
+        df['Cuatrimestre'].astype(str).str.strip()
+        .replace({'nan': '', 'None': '', 'NaT': ''})
+    )
+
     df['Número de esquema'] = df['Número de esquema'].astype(str).str.strip()
 
     df['% completado'] = (
@@ -175,14 +179,20 @@ colores_etapas = {
     'ADJUDIC.':     '#B6A8D3',
     'EJECUCIÓN':    '#86C6A4',
     'CAO':          '#5FA8D3',
-    'FINALIZADA':   '#1B4965',
+    'FINALIZADAS':  '#1B4965',
     'SIN INICIAR':  '#D3D9DE',
 }
 
 # ============================================================
 # 3. INSTANCIA POR OBRA
+# ----------------- LÓGICA CORREGIDA -----------------
+# - Tomamos la ÚLTIMA etapa con progreso (no la primera)
+#   → evita errores cuando etapas previas tienen 98% por redondeo
+# - Tolerancia 0,01 (99%+ se considera completa)
 # ============================================================
-TOL = 1e-6
+TOL = 1e-6           # umbral mínimo para considerar "iniciado"
+TOL_DONE = 0.01      # 1% de tolerancia: >= 99% se trata como 100%
+
 resultados = []
 
 for obra_id, grupo in df.groupby('Obra_ID'):
@@ -193,14 +203,21 @@ for obra_id, grupo in df.groupby('Obra_ID'):
     avance = fila.get('% completado', 0)
     inicio = fila.get('Comienzo', pd.NaT)
     fin    = fila.get('Finalización', pd.NaT)
+    cuatri = str(fila.get('Cuatrimestre', '')).strip()
     link_ariba = str(fila.get('Link_Ariba', '')).strip()
+
+    # Si la fila principal no tiene cuatrimestre, lo tomamos de cualquier sub-tarea
+    if not cuatri:
+        c_sub = grupo['Cuatrimestre'].astype(str).str.strip()
+        c_sub = c_sub[c_sub != '']
+        if not c_sub.empty:
+            cuatri = c_sub.iloc[0]
 
     if not link_ariba:
         links_sub = grupo['Link_Ariba'].dropna().astype(str).str.strip()
         links_sub = links_sub[links_sub != '']
         if not links_sub.empty:
             link_ariba = links_sub.iloc[0]
-
     if link_ariba and not link_ariba.lower().startswith(('http://', 'https://')):
         link_ariba = ''
 
@@ -213,59 +230,68 @@ for obra_id, grupo in df.groupby('Obra_ID'):
         if not m.empty:
             etapas_pct.append((etapa, float(m['% completado'].iloc[0])))
 
+    # ---------- Métricas individuales por sub-tarea ----------
+    pct_ejecucion = next((p for e, p in etapas_pct if e == 'Ejecución'), 0)
+    pct_cao       = next((p for e, p in etapas_pct if e == 'CAO presentado'), 0)
+    ejecucion_full = pct_ejecucion >= 1.0 - TOL_DONE
+    cao_full       = pct_cao       >= 1.0 - TOL_DONE
+
+    # ---------- Determinar instancia ----------
     instancia = "SIN INICIAR"
     if etapas_pct:
-        en_curso = next(((e, p) for e, p in etapas_pct if TOL < p < 1.0 - TOL), None)
-        if en_curso:
-            instancia = mapa_upper[en_curso[0]]
-        elif all(p >= 1.0 - TOL for _, p in etapas_pct):
-            instancia = "FINALIZADA"
+        # Buscamos la ÚLTIMA etapa "en curso" (0 < pct < 99%)
+        en_curso_list = [
+            (e, p) for e, p in etapas_pct
+            if p > TOL and p < 1.0 - TOL_DONE
+        ]
+        if en_curso_list:
+            # Tomamos la MÁS AVANZADA (la última en el orden del flujo)
+            instancia = mapa_upper[en_curso_list[-1][0]]
+        elif cao_full:
+            instancia = "FINALIZADAS"
         elif all(p <= TOL for _, p in etapas_pct):
             instancia = "SIN INICIAR"
         else:
+            # Etapas completas hasta cierto punto, siguiente pendiente
             pend = next((e for e, p in etapas_pct if p <= TOL), None)
             if pend:
                 instancia = mapa_upper[pend]
+            else:
+                instancia = "FINALIZADAS"
 
+    # ---------- Estado ----------
     hoy = pd.Timestamp(datetime.now().date())
-    if instancia == "FINALIZADA":
+    if instancia == "FINALIZADAS":
         estado = "Completada"
-    elif pd.notna(fin) and fin < hoy and avance < 1.0:
+    elif pd.notna(fin) and fin < hoy and avance < 1.0 - TOL_DONE:
         estado = "Crítica"
     else:
         estado = "En Curso"
+
+    # ---------- Cuatrimestre (formateo) ----------
+    if cuatri in ('1', '2', '3'):
+        cuatri_fmt = f"C{cuatri}"
+    elif cuatri:
+        cuatri_fmt = cuatri
+    else:
+        cuatri_fmt = "Sin dato"
 
     resultados.append({
         'ID': n_ome,
         'OBRA': nombre,
         'AERO': aero,
         'INSTANCIA': instancia,
+        'CUATRIMESTRE': cuatri_fmt,
         '% AVANCE': round(avance * 100, 0),
         'ESTADO': estado,
         'INICIO': inicio,
         'VENC.': fin,
         'SAP ARIBA': link_ariba,
+        '_EJECUCION_FULL': ejecucion_full,
+        '_CAO_FULL': cao_full,
     })
 
 df_inst = pd.DataFrame(resultados)
-
-# ============================================================
-# 3.5  CUATRIMESTRE (sobre fecha de inicio)
-# C1: Ene-Abr · C2: May-Ago · C3: Sep-Dic
-# ============================================================
-def calcular_cuatrimestre(fecha):
-    if pd.isna(fecha):
-        return "Sin fecha"
-    mes = fecha.month
-    if mes <= 4:
-        c = "C1"
-    elif mes <= 8:
-        c = "C2"
-    else:
-        c = "C3"
-    return f"{c} {fecha.year}"
-
-df_inst['CUATRIMESTRE'] = df_inst['INICIO'].apply(calcular_cuatrimestre)
 
 # ============================================================
 # 4. SIDEBAR — FILTROS DESPLEGABLES
@@ -278,38 +304,33 @@ opciones_aero = ["Todos"] + aeros
 sel_aero = st.sidebar.selectbox("Aeropuerto", opciones_aero, index=0)
 
 # ---------- INSTANCIA ----------
-instancias_disp = etapas_upper + ['FINALIZADA', 'SIN INICIAR']
+instancias_disp = etapas_upper + ['FINALIZADAS', 'SIN INICIAR']
 instancias_existentes = [i for i in instancias_disp if i in df_inst['INSTANCIA'].unique()]
 opciones_inst = ["Todas"] + instancias_existentes
 sel_inst = st.sidebar.selectbox("Instancia", opciones_inst, index=0)
 
 # ---------- CUATRIMESTRE ----------
 def sort_key_cuatri(c):
-    if c == "Sin fecha":
-        return (9999, 9)
-    partes = c.split()
-    return (int(partes[1]), int(partes[0][1]))
+    if c == "Sin dato":
+        return 99
+    if c.startswith("C") and len(c) >= 2 and c[1].isdigit():
+        return int(c[1])
+    return 50
 
 cuatris = sorted(df_inst['CUATRIMESTRE'].unique(), key=sort_key_cuatri)
-opciones_cuatri = ["Todos"] + cuatris
+opciones_cuatri = ["Todos"] + list(cuatris)
 sel_cuatri = st.sidebar.selectbox("Cuatrimestre", opciones_cuatri, index=0)
 
-# ---------- EXTRAS ----------
+# ---------- META ----------
 st.sidebar.markdown("---")
 META_FINALIZADAS = st.sidebar.slider("Meta % finalizadas", 0, 100, 85)
-solo_con_link = st.sidebar.checkbox("Solo obras con SAP Ariba", value=False)
+META_EJECUTADAS  = st.sidebar.slider("Meta % ejecutadas", 0, 100, 80)
 
 # ---------- APLICAMOS FILTROS ----------
 df_f = df_inst.copy()
-
-if sel_aero != "Todos":
-    df_f = df_f[df_f['AERO'] == sel_aero]
-if sel_inst != "Todas":
-    df_f = df_f[df_f['INSTANCIA'] == sel_inst]
-if sel_cuatri != "Todos":
-    df_f = df_f[df_f['CUATRIMESTRE'] == sel_cuatri]
-if solo_con_link:
-    df_f = df_f[df_f['SAP ARIBA'].str.len() > 0]
+if sel_aero   != "Todos": df_f = df_f[df_f['AERO'] == sel_aero]
+if sel_inst   != "Todas": df_f = df_f[df_f['INSTANCIA'] == sel_inst]
+if sel_cuatri != "Todos": df_f = df_f[df_f['CUATRIMESTRE'] == sel_cuatri]
 
 # ============================================================
 # 5. HEADER
@@ -329,14 +350,15 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 6. KPIs COMPACTOS
+# 6. KPIs
 # ============================================================
 total = len(df_f)
 activas = int((df_f['ESTADO'] == 'En Curso').sum())
 atrasadas = int((df_f['ESTADO'] == 'Crítica').sum())
-finalizadas = int((df_f['ESTADO'] == 'Completada').sum())
+finalizadas = int(df_f['_CAO_FULL'].sum())
+ejecutadas  = int(df_f['_EJECUCION_FULL'].sum())
 pct_finalizadas = (finalizadas / total * 100) if total else 0
-con_link = int((df_f['SAP ARIBA'].str.len() > 0).sum())
+pct_ejecutadas  = (ejecutadas  / total * 100) if total else 0
 
 k1, k2, k3, k4, k5 = st.columns(5)
 with k1:
@@ -349,54 +371,69 @@ with k2:
     <div class="kpi-value">{activas}</div></div>""", unsafe_allow_html=True)
 with k3:
     st.markdown(f"""<div class="kpi-card ok">
+    <div class="kpi-title">Ejecutadas</div>
+    <div class="kpi-value ok">{ejecutadas}</div></div>""", unsafe_allow_html=True)
+with k4:
+    st.markdown(f"""<div class="kpi-card ok">
     <div class="kpi-title">Finalizadas</div>
     <div class="kpi-value ok">{finalizadas}</div></div>""", unsafe_allow_html=True)
-with k4:
+with k5:
     st.markdown(f"""<div class="kpi-card alert">
     <div class="kpi-title">Críticas</div>
     <div class="kpi-value alert">{atrasadas}</div></div>""", unsafe_allow_html=True)
-with k5:
-    st.markdown(f"""<div class="kpi-card warn">
-    <div class="kpi-title">Con SAP Ariba</div>
-    <div class="kpi-value">{con_link}</div></div>""", unsafe_allow_html=True)
 
 st.write("")
 
 # ============================================================
-# 7. GRÁFICOS (donut + barras)
+# 7. GRÁFICOS — 2 DONUTS + BARRAS
 # ============================================================
-g1, g2 = st.columns([1, 2.5])
+g1, g2, g3 = st.columns([1, 1, 2.5])
 
-with g1:
-    st.markdown('<div class="panel-title">Cumplimiento de Meta</div>', unsafe_allow_html=True)
-    fig_donut = go.Figure(go.Pie(
-        values=[pct_finalizadas, max(0, 100 - pct_finalizadas)],
+def donut(pct, label, meta, color):
+    fig = go.Figure(go.Pie(
+        values=[pct, max(0, 100 - pct)],
         hole=0.78,
-        marker=dict(colors=['#5FA8D3', '#EDF2F4'], line=dict(color='white', width=2)),
+        marker=dict(colors=[color, '#EDF2F4'], line=dict(color='white', width=2)),
         textinfo='none', sort=False,
     ))
-    fig_donut.update_layout(
+    fig.update_layout(
         showlegend=False,
         margin=dict(l=0, r=0, t=0, b=0),
         height=210,
         paper_bgcolor='white',
         annotations=[
-            dict(text=f"<b style='font-size:26px;color:#1B4965'>{pct_finalizadas:.0f}%</b>"
-                      f"<br><span style='font-size:9px;color:#6B7C93;letter-spacing:1.5px'>FINALIZADAS</span>"
-                      f"<br><span style='font-size:9px;color:#86C6A4'>Meta {META_FINALIZADAS}%</span>",
+            dict(text=f"<b style='font-size:26px;color:#1B4965'>{pct:.0f}%</b>"
+                      f"<br><span style='font-size:9px;color:#6B7C93;letter-spacing:1.5px'>{label}</span>"
+                      f"<br><span style='font-size:9px;color:#86C6A4'>Meta {meta}%</span>",
                  x=0.5, y=0.5, showarrow=False),
         ],
     )
-    st.plotly_chart(fig_donut, use_container_width=True, config={'displayModeBar': False})
+    return fig
+
+with g1:
+    st.markdown('<div class="panel-title">Finalizadas (CAO 100%)</div>', unsafe_allow_html=True)
+    st.plotly_chart(donut(pct_finalizadas, 'FINALIZADAS', META_FINALIZADAS, '#1B4965'),
+                    use_container_width=True, config={'displayModeBar': False})
 
 with g2:
+    st.markdown('<div class="panel-title">Ejecutadas (Ejecución 100%)</div>', unsafe_allow_html=True)
+    st.plotly_chart(donut(pct_ejecutadas, 'EJECUTADAS', META_EJECUTADAS, '#86C6A4'),
+                    use_container_width=True, config={'displayModeBar': False})
+
+with g3:
     st.markdown('<div class="panel-title">Obras por Instancia</div>', unsafe_allow_html=True)
-    conteo = (
-        df_f['INSTANCIA'].value_counts()
-        .reindex(etapas_upper, fill_value=0)
-        .reset_index()
-    )
-    conteo.columns = ['Etapa', 'Cantidad']
+
+    # Conteo por etapa
+    conteo_dict = df_f['INSTANCIA'].value_counts().to_dict()
+    # Forzamos que "FINALIZADAS" sea CAO presentado al 100%
+    conteo_dict['FINALIZADAS'] = int(df_f['_CAO_FULL'].sum())
+
+    etapas_para_grafico = etapas_upper + ['FINALIZADAS']
+    conteo = pd.DataFrame({
+        'Etapa': etapas_para_grafico,
+        'Cantidad': [conteo_dict.get(e, 0) for e in etapas_para_grafico]
+    })
+
     fig_bar = px.bar(
         conteo, x='Etapa', y='Cantidad', text='Cantidad',
         color='Etapa', color_discrete_map=colores_etapas,
